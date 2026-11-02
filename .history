@@ -1,0 +1,8 @@
+git init
+git remote add origin https://github.com/nike-eng/Blox-Studio
+node_modules
+.bit
+public
+artifacts
+printf "node_modules\n.bit\npublic\nartifacts\n" > .gitignore
+cat .gitignore

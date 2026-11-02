@@ -1,0 +1,11 @@
+:global(html), :global(body), :global(#root) {
+  margin: 0;
+  height: 100%;
+  background: #1e1f24;
+  color: #e6e6e6;
+  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+}
+
+:global(*) {
+  box-sizing: border-box;
+}

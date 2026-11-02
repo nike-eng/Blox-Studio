@@ -1,0 +1,62 @@
+.home {
+  min-height: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+}
+.brand { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; }
+.logo { color: #00a2ff; font-size: 1.3rem; }
+.docsLink { color: #8ab4f8; font-size: 0.9rem; text-decoration: none; }
+.hero { padding: 3rem 0 2rem; }
+.hero h1 { font-size: clamp(1.8rem, 5vw, 3rem); margin: 0 0 0.75rem; line-height: 1.1; }
+.hero p { color: #a8abb3; font-size: 1.1rem; max-width: 40rem; margin: 0 0 1.5rem; }
+.nameInput {
+  width: 100%;
+  max-width: 26rem;
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #3a3d46;
+  background: #272930;
+  color: inherit;
+  font-size: 1rem;
+}
+.sectionTitle { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: #a8abb3; margin: 2rem 0 1rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.card {
+  text-align: left;
+  border: 1px solid #33363f;
+  background: #25272e;
+  color: inherit;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.card:hover { transform: translateY(-2px); border-color: #00a2ff; }
+.preview { height: 120px; }
+.cardBody { padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.cardBody span { color: #a8abb3; font-size: 0.88rem; }
+.list { display: flex; flex-direction: column; gap: 0.5rem; }
+.row {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: #25272e; border: 1px solid #33363f; border-radius: 10px; padding: 0.4rem 0.6rem 0.4rem 1rem;
+}
+.rowMain { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; color: inherit; text-decoration: none; min-height: 44px; justify-content: center; min-width: 0; }
+.muted { color: #8b8e97; font-size: 0.85rem; }
+.error { color: #ff7b72; }
+.badge, .badgeLinked { font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 999px; background: #33363f; white-space: nowrap; }
+.badgeLinked { background: rgba(0, 162, 255, 0.18); color: #6cc4ff; }
+.deleteBtn { min-width: 44px; min-height: 44px; border: none; background: transparent; color: #8b8e97; cursor: pointer; border-radius: 8px; }
+.deleteBtn:hover { background: #3a2a2a; color: #ff7b72; }
+
+@media (max-width: 767px) {
+  .badge, .badgeLinked { display: none; }
+}
