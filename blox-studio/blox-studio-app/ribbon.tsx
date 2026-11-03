@@ -1,4 +1,4 @@
-import type { ClassName, InstanceProps } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import type { ClassName, InstanceProps } from '@robloc/blox-studio.rbxlx-serializer';
 import type { PlaceEditor, Tool } from './use-place-editor.js';
 import styles from './studio.module.css';
 
@@ -18,6 +18,8 @@ const PARTS: InsertPreset[] = [
   { label: 'Block', className: 'Part', props: { shape: 'Block' }, icon: '■' },
   { label: 'Sphere', className: 'Part', props: { shape: 'Ball' }, icon: '●' },
   { label: 'Cylinder', className: 'Part', props: { shape: 'Cylinder' }, icon: '▬' },
+  { label: 'Wedge', className: 'Part', props: { shape: 'Wedge' }, icon: '◣' },
+  { label: 'Corner Wedge', className: 'Part', props: { shape: 'CornerWedge' }, icon: '◤' },
   { label: 'Truss', className: 'TrussPart', icon: '#' },
   { label: 'Spawn', className: 'SpawnLocation', icon: '⬡' },
 ];
@@ -51,7 +53,7 @@ export type RibbonProps = {
  * edit actions and publishing.
  */
 export function Ribbon({ editor, onInsert, onInsertScript, saveState, onPlay, onPublish, onExport, onSettings }: RibbonProps) {
-  const { tool, setTool, selectedId, duplicate, remove, group, undo, redo, canUndo, canRedo } = editor;
+  const { tool, setTool, selectedId, duplicate, copy, paste, canPaste, remove, group, undo, redo, canUndo, canRedo } = editor;
   const btn = (p: InsertPreset) => (
     <button type="button" key={p.label} className={styles.ribbonBtn} onClick={() => onInsert(p)} title={`Insert ${p.label}`}>
       <span className={styles.ribbonIcon}>{p.icon}</span>{p.label}
@@ -101,6 +103,8 @@ export function Ribbon({ editor, onInsert, onInsertScript, saveState, onPlay, on
           <button type="button" className={styles.ribbonBtn} disabled={!canUndo} onClick={undo} title="Undo (Ctrl+Z)"><span className={styles.ribbonIcon}>↶</span>Undo</button>
           <button type="button" className={styles.ribbonBtn} disabled={!canRedo} onClick={redo} title="Redo (Ctrl+Y)"><span className={styles.ribbonIcon}>↷</span>Redo</button>
           <button type="button" className={styles.ribbonBtn} disabled={!selectedId} onClick={() => selectedId && duplicate(selectedId)} title="Duplicate (Ctrl+D)"><span className={styles.ribbonIcon}>⧉</span>Duplicate</button>
+          <button type="button" className={styles.ribbonBtn} disabled={!selectedId} onClick={() => selectedId && copy(selectedId)} title="Copy"><span className={styles.ribbonIcon}>⎘</span>Copy</button>
+          <button type="button" className={styles.ribbonBtn} disabled={!canPaste} onClick={() => paste(selectedId)} title="Paste into the selected object, or next to the copied one"><span className={styles.ribbonIcon}>⇲</span>Paste</button>
           <button type="button" className={styles.ribbonBtn} disabled={!selectedId} onClick={() => selectedId && group(selectedId)} title="Group (Ctrl+G)"><span className={styles.ribbonIcon}>▣</span>Group</button>
           <button type="button" className={styles.ribbonBtn} disabled={!selectedId} onClick={() => selectedId && remove(selectedId)} title="Delete (Del)"><span className={styles.ribbonIcon}>🗑</span>Delete</button>
         </div>

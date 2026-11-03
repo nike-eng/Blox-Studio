@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
-  RigidBody, CuboidCollider, BallCollider, CylinderCollider, CapsuleCollider,
+  RigidBody, CuboidCollider, ConvexHullCollider, BallCollider, CylinderCollider, CapsuleCollider,
   useBeforePhysicsStep, useRapier, type RapierRigidBody, type RapierCollider,
 } from '@react-three/rapier';
-import type { PlaceInstance, Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
-import { PartVisual } from './part-visual.js';
+import type { PlaceInstance, Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import { PartVisual, WEDGE_POINTS, CORNER_WEDGE_POINTS } from './part-visual.js';
 import { PlaytestAvatar, type AvatarAnim } from './playtest-avatar.js';
 import { ParticleBurst, type Burst } from './particle-burst.js';
 import { ROBLOX, buildRuntime, spawnPointOn, touches, type PlaySession, type RuntimePart } from './playtest-runtime.js';
@@ -57,6 +57,12 @@ function PartAnimator({ part }: { part: RuntimePart }) {
   return null;
 }
 
+/** Corner points of a wedge solid scaled to the part's size (physics hull). */
+function hullVertices(shape: string, h: { x: number; y: number; z: number }): Float32Array {
+  const pts = shape === 'Wedge' ? WEDGE_POINTS : CORNER_WEDGE_POINTS;
+  return new Float32Array(pts.flatMap((v) => [v[0] * 2 * h.x, v[1] * 2 * h.y, v[2] * 2 * h.z]));
+}
+
 function RuntimePartView({ part }: { part: RuntimePart }) {
   const p = part.inst.props;
   const moving = p.motion === 'move' || p.motion === 'spin';
@@ -72,7 +78,9 @@ function RuntimePartView({ part }: { part: RuntimePart }) {
     ? <BallCollider args={[Math.min(h.x, h.y, h.z)]} />
     : part.inst.className === 'Part' && p.shape === 'Cylinder'
       ? <CylinderCollider args={[h.x, Math.min(h.y, h.z)]} rotation={[0, 0, Math.PI / 2]} />
-      : <CuboidCollider args={[h.x, h.y, h.z]} />;
+      : part.inst.className === 'Part' && (p.shape === 'Wedge' || p.shape === 'CornerWedge')
+        ? <ConvexHullCollider args={[hullVertices(p.shape, h)]} />
+        : <CuboidCollider args={[h.x, h.y, h.z]} />;
   const type = p.anchored === false && !moving ? 'dynamic' : moving || fades ? 'kinematicPosition' : 'fixed';
   return (
     <>

@@ -1,4 +1,4 @@
-import type { PlaceInstance, PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import type { PlaceInstance, PlaceTemplate } from '@robloc/blox-studio.rbxlx-serializer';
 
 /**
  * Publish history entry.
@@ -32,11 +32,31 @@ export function serviceUrl(): string {
   return `${base}/blox-studio-service`;
 }
 
+let memoryToken = '';
+
+/**
+ * Private key that proves which projects belong to this browser. Created once and kept in localStorage.
+ * @returns the owner key
+ */
+export function ownerKey(): string {
+  try {
+    const saved = localStorage.getItem('blox-studio-owner');
+    if (saved && saved.length >= 32) return saved;
+  } catch { /* storage unavailable */ }
+  if (memoryToken) return memoryToken;
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const key = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  memoryToken = key;
+  try { localStorage.setItem('blox-studio-owner', key); } catch { /* storage unavailable */ }
+  return key;
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${serviceUrl()}${path}`, {
     ...init,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(init.headers || {}) },
+    headers: { 'Content-Type': 'application/json', 'x-owner-key': ownerKey(), ...(init.headers || {}) },
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.message || `Request failed (${res.status})`);
@@ -65,5 +85,5 @@ export const studioApi = {
   /** Whether the Roblox API key is configured on the server. */
   robloxStatus: () => request<{ configured: boolean }>('/roblox/status'),
   /** URL to download the .rbxlx file. */
-  exportUrl: (id: string) => `${serviceUrl()}/projects/${id}/export`,
+  exportUrl: (id: string) => `${serviceUrl()}/projects/${id}/export?key=${ownerKey()}`,
 };

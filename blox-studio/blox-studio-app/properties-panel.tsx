@@ -1,4 +1,4 @@
-import { MATERIAL_NAMES, PART_CLASSES, SCRIPT_CLASSES, SERVICE_CLASSES, type PartBehavior, type PartMotion, type PartShape } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import { MATERIAL_NAMES, PART_CLASSES, SCRIPT_CLASSES, SERVICE_CLASSES, type PartBehavior, type PartMotion, type PartShape } from '@robloc/blox-studio.rbxlx-serializer';
 import type { PlaceEditor } from './use-place-editor.js';
 import { NumberField, PropRow, TextField, Vec3Field } from './property-fields.js';
 import styles from './studio.module.css';
@@ -63,7 +63,7 @@ export function PropertiesPanel({ editor, onOpenScript }: PropertiesPanelProps) 
             {inst.className === 'Part' && (
               <PropRow label="Shape">
                 <select className={styles.propInput} value={p.shape || 'Block'} onChange={(e) => set({ shape: e.target.value as PartShape })}>
-                  <option>Block</option><option>Ball</option><option>Cylinder</option>
+                  <option>Block</option><option>Ball</option><option>Cylinder</option><option>Wedge</option><option value="CornerWedge">Corner Wedge</option>
                 </select>
               </PropRow>
             )}

@@ -2,7 +2,7 @@ import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
-import type { PlaceInstance, Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import type { PlaceInstance, Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
 import { PlaytestWorld, type PlayEvent, type PlayInput } from './playtest-world.js';
 import { SceneEnvironment, type GraphicsQuality } from './scene-environment.js';
 import { ROBLOX, type PlaySession } from './playtest-runtime.js';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { PlaceInstance } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import type { PlaceInstance } from '@robloc/blox-studio.rbxlx-serializer';
 import { ClassIcon } from './class-icon.js';
 import styles from './studio.module.css';
 

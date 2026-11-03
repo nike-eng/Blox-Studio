@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { SCRIPT_CLASSES, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import { SCRIPT_CLASSES, type PlaceInstance, type Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
 import { studioApi, type Project } from './studio-api.js';
 import { usePlaceEditor } from './use-place-editor.js';
 import { Viewport } from './viewport.js';
 import { ExplorerPanel } from './explorer-panel.js';
 import { PropertiesPanel } from './properties-panel.js';
 import { ScriptEditor } from './script-editor.js';
-import { Ribbon, type InsertPreset } from './ribbon.js';
+import { TopBar, ToolRail, AddMenu, SelectionBar, SNAPS, type SnapLevel, type InsertItem } from './studio-chrome.js';
+import chrome from './studio-chrome.module.css';
 import { PublishDialog } from './publish-dialog.js';
 import { Playtest } from './playtest.js';
 import styles from './studio.module.css';
@@ -17,6 +18,11 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
   const pending = useRef<PlaceInstance[] | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const insertPointRef = useRef<() => Vec3>(() => [0, 5, 0]);
+  const focusRef = useRef<(pos: Vec3) => void>(() => undefined);
+  const [addOpen, setAddOpen] = useState(false);
+  const [multi, setMulti] = useState(false);
+  const [snap, setSnap] = useState<SnapLevel>('normal');
+  const [space, setSpace] = useState<'world' | 'local'>('world');
   const [openScriptId, setOpenScriptId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<'publish' | 'settings' | null>(null);
   const [mobilePanel, setMobilePanel] = useState<'explorer' | 'properties' | null>(null);
@@ -45,14 +51,15 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
 
   const editor = usePlaceEditor(project.instances, onChange);
 
-  useEffect(() => () => { flush(); }, [flush]);  useEffect(() => {
-    const onHide = () => { if (document.visibilityState === 'hidden') flush(); };
-    window.addEventListener('pagehide', flush);
+  useEffect(() => () => { flush(); }, [flush]);
+
+  // Safari on iPad can close the tab without unmounting, so save as soon as the page is hidden.
+  useEffect(() => {
+    const save = () => { flush(); };
+    const onHide = () => { if (document.visibilityState === 'hidden') save(); };
+    window.addEventListener('pagehide', save);
     document.addEventListener('visibilitychange', onHide);
-    return () => {
-      window.removeEventListener('pagehide', flush);
-      document.removeEventListener('visibilitychange', onHide);
-    };
+    return () => { window.removeEventListener('pagehide', save); document.removeEventListener('visibilitychange', onHide); };
   }, [flush]);
 
   useEffect(() => {
@@ -64,10 +71,18 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) editor.redo(); else editor.undo(); }
       else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); editor.redo(); }
-      else if (mod && e.key.toLowerCase() === 'd' && editor.selectedId) { e.preventDefault(); editor.duplicate(editor.selectedId); }
-      else if (mod && e.key.toLowerCase() === 'g' && editor.selectedId) { e.preventDefault(); editor.group(editor.selectedId); }
+      else if (mod && e.key.toLowerCase() === 'd' && editor.selectedId) { e.preventDefault(); editor.duplicateMany(editor.pickedIds); }
+      else if (mod && e.key.toLowerCase() === 'g' && editor.selectedId) { e.preventDefault(); editor.groupMany(editor.pickedIds); }
       else if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); flush(); }
-      else if ((e.key === 'Delete' || e.key === 'Backspace') && editor.selectedId) { editor.remove(editor.selectedId); }
+      else if ((e.key === 'Delete' || e.key === 'Backspace') && editor.selectedId) { editor.removeMany(editor.pickedIds); }
+      else if (mod && e.key.toLowerCase() === 'c' && editor.selectedId) { e.preventDefault(); editor.copy(editor.selectedId); }
+      else if (mod && e.key.toLowerCase() === 'x' && editor.selectedId) { e.preventDefault(); editor.cut(editor.selectedId); }
+      else if (mod && e.key.toLowerCase() === 'u' && editor.selectedId) { e.preventDefault(); editor.ungroup(editor.selectedId); }
+      else if (mod && e.key.toLowerCase() === 'v') { e.preventDefault(); editor.paste(editor.selectedId ?? undefined); }
+      else if (e.altKey && e.key.toLowerCase() === 'a' && editor.selected?.props.position) { editor.updateProps(editor.selected.id, { anchored: editor.selected.props.anchored === false }); }
+      else if (e.key.toLowerCase() === 'f' && !mod) { const p = editor.selected?.props.position; if (p) focusRef.current(p); }
+      else if (mod && e.key.toLowerCase() === 'l') { e.preventDefault(); setSpace((x) => (x === 'world' ? 'local' : 'world')); }
+      else if (e.key === 'Escape') { setAddOpen(false); editor.setSelectedId(null); }
       else if (e.key === '1') editor.setTool('select');
       else if (e.key === '2') editor.setTool('move');
       else if (e.key === '3') editor.setTool('scale');
@@ -77,18 +92,64 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     return () => window.removeEventListener('keydown', onKey);
   }, [editor, flush, playing]);
 
-  const insertPreset = (preset: InsertPreset) => {
-    const position = insertPointRef.current();
-    const shape = preset.props?.shape;
-    const size: Vec3 | undefined = shape === 'Ball' || shape === 'Cylinder' ? [4, 4, 4] : undefined;
-    editor.insert(preset.className, 'Workspace', { position, ...(size ? { size } : {}), ...preset.props }, preset.name);
+  /** Finds an empty spot near the camera target so new parts never pile up on each other. */
+  const freeSpot = (size: Vec3): Vec3 => {
+    const [bx, by, bz] = insertPointRef.current();
+    const taken = editor.instances.filter((i) => i.props.position && i.props.size && Math.max(...i.props.size) < 200);
+    const clash = (x: number, z: number) =>
+      taken.some((i) => {
+        const [px, , pz] = i.props.position!;
+        const [sx, , sz] = i.props.size!;
+        return Math.abs(px - x) < (sx + size[0]) / 2 + 0.5 && Math.abs(pz - z) < (sz + size[2]) / 2 + 0.5;
+      });
+    for (let k = 0; k < 60; k += 1) {
+      const r = k === 0 ? 0 : 5 * Math.sqrt(k);
+      const a = k * 2.399963;
+      const x = Math.round(bx + r * Math.cos(a));
+      const z = Math.round(bz + r * Math.sin(a));
+      if (!clash(x, z)) {
+        // Sit on whatever is underneath (the baseplate, a platform), like Roblox Studio does.
+        const ground = editor.instances.reduce((top, i) => {
+          if (!i.props.position || !i.props.size) return top;
+          const [px, py, pz] = i.props.position;
+          const [sx, sy, sz] = i.props.size;
+          const under = Math.abs(px - x) <= sx / 2 && Math.abs(pz - z) <= sz / 2;
+          return under && py + sy / 2 <= by + 0.01 ? Math.max(top, py + sy / 2) : top;
+        }, 0);
+        return [x, Math.round((ground + size[1] / 2) * 100) / 100, z];
+      }
+    }
+    return [bx, by, bz];
   };
 
-  const insertScript = () => {
+  const insertItem = (item: InsertItem) => {
+    setAddOpen(false);
     const sel = editor.selected;
-    const parent = sel && !SCRIPT_CLASSES.includes(sel.className) ? sel.id : 'ServerScriptService';
-    const s = editor.insert('Script', parent);
-    setOpenScriptId(s.id);
+    if (item.className === 'Light') {
+      const onPart = sel && sel.props.position && !SCRIPT_CLASSES.includes(sel.className) && sel.className !== 'Folder' && sel.className !== 'Model';
+      if (onPart) { editor.insert('PointLight', sel.id); return; }
+      const spot = freeSpot([2, 2, 2]);
+      const bulb = editor.insert('Part', 'Workspace', { position: spot, size: [2, 2, 2], shape: 'Ball', color: '#fff3b0', material: 'Neon', anchored: true }, 'LightBulb');
+      editor.insert('PointLight', bulb.id);
+      editor.setSelectedId(bulb.id);
+      return;
+    }
+    if (item.className === 'Script' || item.className === 'LocalScript' || item.className === 'ModuleScript') {
+      const parent = item.className === 'Script' ? 'ServerScriptService' : item.className === 'ModuleScript' ? 'ReplicatedStorage' : 'StarterGui';
+      const created = editor.insert(item.className, parent);
+      setOpenScriptId(created.id);
+      return;
+    }
+    if (item.className === 'Folder' || item.className === 'Model') {
+      editor.insert(item.className, 'Workspace', undefined, item.name);
+      return;
+    }
+    const shape = item.props?.shape;
+    const size = (item.props?.size as Vec3 | undefined) ?? (shape === 'Ball' || shape === 'Cylinder' || shape === 'Wedge' || shape === 'CornerWedge' ? [4, 4, 4] : [4, 1, 2]);
+    const position = freeSpot(size);
+    const created = editor.insert(item.className, 'Workspace', { position, ...(shape === 'Ball' || shape === 'Cylinder' || shape === 'Wedge' || shape === 'CornerWedge' ? { size } : {}), ...item.props }, item.name);
+    editor.setSelectedId(created.id);
+    if (editor.tool === 'select') editor.setTool('move');
   };
 
   const openScript = openScriptId ? editor.byId.get(openScriptId) : null;
@@ -100,18 +161,13 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
 
   return (
     <div className={styles.studio}>
-      <div className={styles.titleBar}>
-        <Link to="/" className={styles.brand}><span className={styles.logo}>◆</span> Blox Studio</Link>
-        <span className={styles.projectName}>{project.name}</span>
-      </div>
-      <Ribbon
-        editor={editor}
-        onInsert={insertPreset}
-        onInsertScript={insertScript}
+      <TopBar
+        projectName={project.name}
         saveState={saveState}
+        editor={editor}
         onPlay={() => setPlaying(editor.instances)}
-        onPublish={() => setDialog('publish')}
         onExport={async () => { await flush(); window.open(studioApi.exportUrl(project.id), '_blank'); }}
+        onPublish={() => setDialog('publish')}
         onSettings={() => setDialog('settings')}
       />
       <div className={styles.workArea}>
@@ -125,8 +181,15 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
           ) : (
             <div className={styles.viewport}>
               {/* Unmounted during playtest so the GPU only renders one scene. */}
-              {!playing && <Viewport editor={editor} insertPointRef={insertPointRef} />}
-              <div className={styles.viewportHint}>Drag to orbit · Right-drag to pan · Scroll to zoom · 1–4 switch tools</div>
+              {!playing && <Viewport editor={editor} insertPointRef={insertPointRef} focusRef={focusRef} snap={SNAPS[snap]} space={space} multiMode={multi} />}
+              {!playing && (
+                <>
+                  <ToolRail multi={multi} setMulti={setMulti} tool={editor.tool} setTool={editor.setTool} snap={snap} setSnap={setSnap} space={space} setSpace={setSpace} />
+                  <div className={chrome.hint}>Drag to look around · Right-drag to move · Scroll to zoom · F to focus</div>
+                  <AddMenu open={addOpen} onToggle={() => setAddOpen((o) => !o)} onPick={insertItem} />
+                  {!addOpen && <SelectionBar editor={editor} onFocus={() => { const p = editor.selected?.props.position; if (p) focusRef.current(p); }} />}
+                </>
+              )}
             </div>
           )}
         </main>

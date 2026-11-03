@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import type { Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
 import styles from './studio.module.css';
 
 /**

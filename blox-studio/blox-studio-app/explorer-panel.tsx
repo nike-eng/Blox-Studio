@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { SCRIPT_CLASSES, SERVICE_CLASSES, type ClassName, type PlaceInstance } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import { SCRIPT_CLASSES, SERVICE_CLASSES, type ClassName, type PlaceInstance } from '@robloc/blox-studio.rbxlx-serializer';
+import { subtreeIds } from './use-place-editor.js';
 import type { PlaceEditor } from './use-place-editor.js';
 import { ClassIcon } from './class-icon.js';
 import styles from './studio.module.css';
@@ -21,8 +22,10 @@ export type ExplorerPanelProps = {
 export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set(['Lighting', 'ReplicatedStorage', 'StarterGui']));
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [actionsFor, setActionsFor] = useState<string | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
-  const { instances, selectedId, setSelectedId, insert, reparent } = editor;
+  const { instances, selectedId, setSelectedId, insert, reparent, rename, duplicate, copy, paste, canPaste, group, remove } = editor;
 
   const childrenOf = (id: string | null) => instances.filter((i) => i.parentId === id);
   const toggle = (id: string) => {
@@ -64,6 +67,17 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
             </button>
             <ClassIcon className={inst.className} />
             <span className={styles.treeName}>{inst.name}</span>
+            {!isService && (
+              <button
+                type="button"
+                className={styles.treeAdd}
+                style={{ width: 26, height: 22 }}
+                title="Actions: rename, copy, move into…"
+                onClick={(e) => { e.stopPropagation(); setActionsFor(actionsFor === inst.id ? null : inst.id); setMovingId(null); setMenuFor(null); }}
+              >
+                ⋯
+              </button>
+            )}
             <button
               type="button"
               className={styles.treeAdd}
@@ -72,6 +86,44 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
             >
               +
             </button>
+          </div>
+        )}
+        {actionsFor === inst.id && !isService && (
+          <div className={styles.insertMenu} style={{ marginLeft: 20 + depth * 14, ...(movingId === inst.id ? { gridTemplateColumns: '1fr' } : {}) }}>
+            {movingId === inst.id ? (
+              <>
+                <div className={styles.empty} style={{ gridColumn: '1 / -1', padding: '0.2rem 0.4rem' }}>Move “{inst.name}” into:</div>
+                {instances
+                  .filter((t) => !subtreeIds(instances, inst.id).has(t.id) && !SCRIPT_CLASSES.includes(t.className) && t.className !== 'PointLight' && !['TrussPart', 'SpawnLocation', 'Part'].includes(t.className))
+                  .map((t) => (
+                    <button
+                      type="button"
+                      key={t.id}
+                      className={styles.insertItem}
+                      style={{ minHeight: 32 }}
+                      onClick={() => { reparent(inst.id, t.id); setActionsFor(null); setMovingId(null); }}
+                    >
+                      <ClassIcon className={t.className} /> {t.name}
+                    </button>
+                  ))}
+              </>
+            ) : (
+              <>
+                {[
+                  ['Rename', () => { const name = window.prompt('New name', inst.name); if (name && name.trim()) rename(inst.id, name.trim()); setActionsFor(null); }],
+                  ['Duplicate', () => { duplicate(inst.id); setActionsFor(null); }],
+                  ['Copy', () => { copy(inst.id); setActionsFor(null); }],
+                  [canPaste ? 'Paste into' : 'Paste (copy first)', () => { if (canPaste) paste(inst.id); setActionsFor(null); }],
+                  ['Group', () => { group(inst.id); setActionsFor(null); }],
+                  ['Move into…', () => setMovingId(inst.id)],
+                  ['Delete', () => { remove(inst.id); setActionsFor(null); }],
+                ].map(([label, run]) => (
+                  <button type="button" key={label as string} className={styles.insertItem} style={{ minHeight: 32 }} onClick={run as () => void}>
+                    {label as string}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         )}
         {menuFor === inst.id && (

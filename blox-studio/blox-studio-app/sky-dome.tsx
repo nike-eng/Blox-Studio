@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import type { Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import type { Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
 
 const vertex = /* glsl */ `
 varying vec3 vDir;

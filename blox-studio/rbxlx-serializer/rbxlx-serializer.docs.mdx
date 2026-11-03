@@ -1,0 +1,25 @@
+---
+title: Rbxlx Serializer
+description: Roblox place model and .rbxlx (XML place) serializer used by Blox Studio.
+labels: ['roblox', 'rbxlx', 'serializer']
+---
+
+Defines the Blox Studio place model (a flat list of Roblox instances) and converts it into
+the Roblox XML place format accepted by Roblox Studio and the Open Cloud Place Publishing API.
+
+### Create a place and serialize it
+
+```ts
+import { createPlaceTemplate, toRbxlx } from '@robloc/blox-studio.rbxlx-serializer';
+
+const instances = createPlaceTemplate('baseplate');
+const xml = toRbxlx(instances);
+```
+
+### Add a part
+
+```ts
+import { createInstance } from '@robloc/blox-studio.rbxlx-serializer';
+
+const part = createInstance('Part', 'Workspace', { color: '#ff0000', position: [0, 5, 0] });
+```

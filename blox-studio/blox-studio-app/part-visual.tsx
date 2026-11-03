@@ -1,7 +1,7 @@
 import { forwardRef, useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
-import type { PlaceInstance, Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import type { PlaceInstance, Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
 import { tiledTexture } from './material-textures.js';
 
 /** Degrees → radians. */
@@ -14,6 +14,53 @@ export const ballGeo = new THREE.SphereGeometry(0.5, 32, 16);
 /** Unit cylinder whose axis is X, matching Roblox's cylinder orientation. */
 export const cylGeo = new THREE.CylinderGeometry(0.5, 0.5, 1, 32).rotateZ(Math.PI / 2);
 
+/** Builds a flat-shaded unit solid from triangles (box-projected UVs so textures tile). */
+function solid(tris: number[][][]): THREE.BufferGeometry {
+  const pos: number[] = []; const uv: number[] = [];
+  const centre = new THREE.Vector3();
+  tris.forEach((t) => t.forEach((v) => centre.add(new THREE.Vector3(v[0], v[1], v[2]))));
+  centre.divideScalar(tris.length * 3);
+  for (const t of tris) {
+    const pts = t.map((v) => new THREE.Vector3(v[0], v[1], v[2]));
+    const a = pts[0]; let b = pts[1]; let c = pts[2];
+    let n = new THREE.Vector3().crossVectors(b.clone().sub(a), c.clone().sub(a)).normalize();
+    // Make every face point away from the middle of the solid, whatever order its corners were listed in.
+    if (n.dot(a.clone().add(b).add(c).divideScalar(3).sub(centre)) < 0) { [b, c] = [c, b]; n = n.negate(); }
+    const ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
+    for (const v of [a, b, c]) {
+      pos.push(v.x, v.y, v.z);
+      if (ay >= ax && ay >= az) uv.push(v.x + 0.5, v.z + 0.5);
+      else if (ax >= az) uv.push(v.z + 0.5, v.y + 0.5);
+      else uv.push(v.x + 0.5, v.y + 0.5);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.computeVertexNormals();
+  return g;
+}
+const L = -0.5; const H = 0.5;
+/** Corner points shared by the wedge solids and their physics hulls (unit cube coordinates). */
+export const WEDGE_POINTS: number[][] = [[L, L, L], [H, L, L], [H, L, H], [L, L, H], [L, H, H], [H, H, H]];
+export const CORNER_WEDGE_POINTS: number[][] = [[L, L, L], [H, L, L], [H, L, H], [L, L, H], [H, H, H]];
+/** Ramp: tall wall at the back (+Z), slope facing front (-Z). Counter-clockwise outward faces. */
+export const wedgeGeo = solid([
+  [[L, L, L], [H, L, H], [H, L, L]], [[L, L, L], [L, L, H], [H, L, H]],
+  [[L, L, H], [H, H, H], [H, L, H]], [[L, L, H], [L, H, H], [H, H, H]],
+  [[L, L, L], [H, H, H], [L, H, H]], [[L, L, L], [H, L, L], [H, H, H]],
+  [[L, L, L], [L, H, H], [L, L, H]],
+  [[H, L, L], [H, L, H], [H, H, H]],
+]);
+/** Pyramid-like corner: tip above the back-right corner. */
+export const cornerWedgeGeo = solid([
+  [[L, L, L], [H, L, H], [H, L, L]], [[L, L, L], [L, L, H], [H, L, H]],
+  [[H, L, L], [H, L, H], [H, H, H]],
+  [[L, L, H], [H, H, H], [H, L, H]],
+  [[L, L, L], [H, L, L], [H, H, H]],
+  [[L, L, L], [H, H, H], [L, L, H]],
+]);
+
 /**
  * Picks the unit geometry for a part instance.
  * @param inst - part instance
@@ -23,6 +70,8 @@ export function geometryFor(inst: PlaceInstance): THREE.BufferGeometry {
   if (inst.className !== 'Part') return boxGeo;
   if (inst.props.shape === 'Ball') return ballGeo;
   if (inst.props.shape === 'Cylinder') return cylGeo;
+  if (inst.props.shape === 'Wedge') return wedgeGeo;
+  if (inst.props.shape === 'CornerWedge') return cornerWedgeGeo;
   return boxGeo;
 }
 

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { EffectComposer, Bloom, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
-import type { PlaceInstance, Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import type { PlaceInstance, Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
 import { SkyDome } from './sky-dome.js';
 
 /**
