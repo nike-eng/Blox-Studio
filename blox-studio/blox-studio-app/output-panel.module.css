@@ -1,0 +1,32 @@
+/* Output window + Command Bar (docked under the viewport). */
+.panel {
+  --ink: #1c1e24; --panel: #262932; --line: #343844; --text: #eceef3; --soft: #9aa1b2; --accent: #2f9bff; --danger: #ff6b6b; --warn: #f0c24d;
+  flex-shrink: 0; display: flex; flex-direction: column; height: min(34vh, 280px); min-height: 150px;
+  background: var(--ink); border-top: 1px solid var(--line); color: var(--text); font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+}
+.head { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.6rem; min-height: 42px; background: var(--panel); border-bottom: 1px solid var(--line); font-size: 0.85rem; flex-wrap: nowrap; overflow-x: auto; }
+.head button { font: inherit; }
+.chips { display: flex; gap: 4px; }
+.chips button { min-height: 32px; padding: 0 0.7rem; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--soft); font-size: 0.75rem; cursor: pointer; white-space: nowrap; }
+.chips button[data-on='true'] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.grow { flex: 1; }
+.textBtn, .iconBtn { min-height: 36px; min-width: 36px; padding: 0 0.6rem; border: none; border-radius: 10px; background: transparent; color: var(--text); font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.textBtn:hover, .iconBtn:hover { background: rgba(255, 255, 255, 0.07); }
+.stop { min-height: 36px; padding: 0 0.8rem; border: none; border-radius: 10px; background: var(--danger); color: #1c1e24; font-weight: 700; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
+.body { flex: 1; overflow: auto; padding: 0.4rem 0.6rem; font-family: 'Cascadia Code', Consolas, 'Fira Code', monospace; font-size: 13px; line-height: 1.5; -webkit-overflow-scrolling: touch; }
+.empty { margin: 0.6rem 0; color: var(--soft); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 0.82rem; }
+.empty code { background: var(--panel); padding: 1px 6px; border-radius: 6px; }
+.line { display: flex; gap: 0.6rem; padding: 1px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+.time { flex-shrink: 0; color: #6b7285; }
+.text { white-space: pre-wrap; word-break: break-word; user-select: text; }
+.line[data-kind='warn'] .text { color: var(--warn); }
+.line[data-kind='error'] .text { color: var(--danger); }
+.line[data-kind='info'] .text { color: var(--soft); }
+.cmd { display: flex; align-items: flex-end; gap: 0.4rem; padding: 0.4rem 0.6rem; border-top: 1px solid var(--line); background: var(--panel); }
+.prompt { color: var(--accent); font-weight: 700; padding-bottom: 0.55rem; }
+.input { flex: 1; min-height: 44px; max-height: 96px; padding: 0.65rem 0.7rem; resize: none; border: 1px solid var(--line); border-radius: 10px; background: var(--ink); color: var(--text); font-family: 'Cascadia Code', Consolas, 'Fira Code', monospace; font-size: 16px; line-height: 1.3; }
+.input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.run { min-height: 44px; padding: 0 1.1rem; border: none; border-radius: 10px; background: var(--accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.run:disabled { opacity: 0.4; cursor: default; }
+.panel button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+@media (max-width: 767px) { .panel { height: min(42vh, 300px); } .input::placeholder { font-size: 12px; } }

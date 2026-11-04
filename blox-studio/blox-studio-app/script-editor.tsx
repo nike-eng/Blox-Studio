@@ -10,12 +10,15 @@ export type ScriptEditorProps = {
   script: PlaceInstance;
   onChange: (source: string) => void;
   onClose: () => void;
+  /** Runs the script (Output shows the result). */
+  onRun?: (source: string) => void;
+  running?: boolean;
 };
 
 /**
  * Luau script editor tab with line numbers and Tab-to-indent.
  */
-export function ScriptEditor({ script, onChange, onClose }: ScriptEditorProps) {
+export function ScriptEditor({ script, onChange, onClose, onRun, running }: ScriptEditorProps) {
   const [source, setSource] = useState(script.props.source || '');
   const gutterRef = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -37,6 +40,10 @@ export function ScriptEditor({ script, onChange, onClose }: ScriptEditorProps) {
       <div className={styles.scriptTab}>
         <ClassIcon className={script.className} />
         <span>{script.name}</span>
+        {onRun && (
+          <button type="button" onClick={() => { clearTimeout(timer.current); onChange(source); onRun(source); }} disabled={running} title="Run this script (output appears in Output)"
+            style={{ marginLeft: 8, minHeight: 32, padding: '0 12px', border: 0, borderRadius: 8, background: '#2fd06b', color: '#10331c', fontWeight: 700, cursor: 'pointer' }}>▶ Run</button>
+        )}
         <button type="button" className={styles.scriptClose} onClick={() => { clearTimeout(timer.current); onChange(source); onClose(); }} aria-label="Close script">✕</button>
       </div>
       <div className={styles.scriptBody}>

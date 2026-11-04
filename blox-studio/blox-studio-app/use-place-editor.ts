@@ -72,6 +72,9 @@ export function usePlaceEditor(initial: PlaceInstance[], onChange?: (instances: 
     commit(current.current.map((i) => (i.id === id ? { ...i, props: { ...i.props, ...props } } : i)));
   }, [commit]);
 
+  /** Replaces the whole place in one undo step (used by scripts). */
+  const setAll = useCallback((next: PlaceInstance[]) => { commit(next); }, [commit]);
+
   /** Updates several instances in one undo step. */
   const updateMany = useCallback((updates: Record<string, InstanceProps>) => {
     commit(current.current.map((i) => (updates[i.id] ? { ...i, props: { ...i.props, ...updates[i.id] } } : i)));
@@ -254,7 +257,7 @@ export function usePlaceEditor(initial: PlaceInstance[], onChange?: (instances: 
   return {
     instances, byId, selected, selectedId, setSelectedId, multiIds, pickedIds, toggleMulti, tool, setTool,
     removeMany, duplicateMany, groupMany, ungroup, cut,
-    updateProps, updateMany, rename, insert, remove, duplicate, copy, paste, canPaste: !!clipboard.current, reparent, group, undo, redo,
+    updateProps, updateMany, setAll, rename, insert, remove, duplicate, copy, paste, canPaste: !!clipboard.current, reparent, group, undo, redo,
     canUndo: past.current.length > 0, canRedo: future.current.length > 0,
   };
 }

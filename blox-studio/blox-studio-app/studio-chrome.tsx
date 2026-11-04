@@ -68,12 +68,17 @@ export type TopBarProps = {
   onExport: () => void;
   onPublish: () => void;
   onSettings: () => void;
+  /** Shows or hides the Output window. */
+  onToggleOutput?: () => void;
+  outputOpen?: boolean;
+  /** Number of errors waiting in Output. */
+  outputErrors?: number;
 };
 
 /**
  * Slim top bar: where you are, undo/redo, and the three big actions (Play, Export, Publish).
  */
-export function TopBar({ projectName, saveState, editor, onPlay, onExport, onPublish, onSettings }: TopBarProps) {
+export function TopBar({ projectName, saveState, editor, onPlay, onExport, onPublish, onSettings, onToggleOutput, outputOpen, outputErrors = 0 }: TopBarProps) {
   const { undo, redo, canUndo, canRedo } = editor;
   return (
     <header className={s.top} role="toolbar" aria-label="Studio">
@@ -95,6 +100,11 @@ export function TopBar({ projectName, saveState, editor, onPlay, onExport, onPub
         <Icon name="play" size={18} /><span className={s.btnText}>Play</span>
       </button>
       <button type="button" className={s.iconBtn} onClick={onExport} title="Get the Roblox file (.rbxlx)" aria-label="Export"><Icon name="download" /></button>
+      {onToggleOutput && (
+        <button type="button" className={s.iconBtn} onClick={onToggleOutput} title="Output and Command Bar" aria-label="Output" aria-pressed={!!outputOpen} style={outputOpen ? { background: '#262932', color: '#2f9bff' } : outputErrors ? { color: '#ff6b6b' } : undefined}>
+          <Icon name="terminal" />
+        </button>
+      )}
       <button type="button" className={s.iconBtn} onClick={onSettings} title="Game settings" aria-label="Game settings"><Icon name="settings" /></button>
       <button type="button" className={s.publishBtn} onClick={onPublish} title="Publish to Roblox">
         <Icon name="publish" size={18} /><span className={s.btnText}>Publish</span>

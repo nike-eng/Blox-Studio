@@ -9,6 +9,9 @@ import { PropertiesPanel } from './properties-panel.js';
 import { ScriptEditor } from './script-editor.js';
 import { TopBar, ToolRail, AddMenu, SelectionBar, SNAPS, type SnapLevel, type InsertItem } from './studio-chrome.js';
 import chrome from './studio-chrome.module.css';
+import { OutputPanel } from './output-panel.js';
+import { runStudioScript, type OutputKind, type OutputLine } from './studio-lua.js';
+import type { Interpreter } from './luau-lite.js';
 import { PublishDialog } from './publish-dialog.js';
 import { Playtest } from './playtest.js';
 import styles from './studio.module.css';
@@ -27,6 +30,11 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
   const [dialog, setDialog] = useState<'publish' | 'settings' | null>(null);
   const [mobilePanel, setMobilePanel] = useState<'explorer' | 'properties' | null>(null);
   const [playing, setPlaying] = useState<PlaceInstance[] | null>(null);
+  const [outputOpen, setOutputOpen] = useState(false);
+  const [outputLines, setOutputLines] = useState<OutputLine[]>([]);
+  const [running, setRunning] = useState(false);
+  const runner = useRef<Interpreter | null>(null);
+  const lineId = useRef(0);
 
   const flush = useCallback(async () => {
     clearTimeout(timer.current);
@@ -50,6 +58,31 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
   }, [flush]);
 
   const editor = usePlaceEditor(project.instances, onChange);
+  const latest = useRef(editor.instances);
+  latest.current = editor.instances;
+
+  const log = useCallback((kind: OutputKind, text: string) => {
+    setOutputLines((ls) => [...ls.slice(-499), { id: ++lineId.current, kind, text, time: Date.now() }]);
+  }, []);
+
+  /** Runs Luau against the place; whatever it changes lands as ONE undo step. */
+  const runLuau = useCallback(async (source: string, chunk: string, scriptId?: string, echo = false) => {
+    if (runner.current) return;
+    setOutputOpen(true);
+    if (echo) log('info', `> ${source.split('\n')[0]}${source.includes('\n') ? ' …' : ''}`);
+    const base = latest.current;
+    setRunning(true);
+    try {
+      const res = await runStudioScript(source, base, { chunk, scriptId, out: log, onStart: (it) => { runner.current = it; } });
+      if (res.changed) {
+        if (latest.current !== base) log('warn', 'You edited the place while the script was running, so its changes were not applied. Run it again.');
+        else editor.setAll(res.instances);
+      }
+    } finally {
+      runner.current = null;
+      setRunning(false);
+    }
+  }, [log, editor]);
 
   useEffect(() => () => { flush(); }, [flush]);
 
@@ -169,6 +202,9 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
         onExport={async () => { await flush(); window.open(studioApi.exportUrl(project.id), '_blank'); }}
         onPublish={() => setDialog('publish')}
         onSettings={() => setDialog('settings')}
+        onToggleOutput={() => setOutputOpen((o) => !o)}
+        outputOpen={outputOpen}
+        outputErrors={outputLines.filter((l) => l.kind === 'error').length}
       />
       <div className={styles.workArea}>
         <main className={styles.center}>
@@ -177,6 +213,8 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
               script={openScript}
               onChange={(source) => { if (source !== openScript.props.source) editor.updateProps(openScript.id, { source }); }}
               onClose={() => setOpenScriptId(null)}
+              onRun={(src) => { void runLuau(src, openScript.name, openScript.id); }}
+              running={running}
             />
           ) : (
             <div className={styles.viewport}>
@@ -202,6 +240,16 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
           </div>
         </aside>
       </div>
+      {outputOpen && !playing && (
+        <OutputPanel
+          lines={outputLines}
+          running={running}
+          onClear={() => setOutputLines([])}
+          onRun={(src) => { void runLuau(src, 'Command', undefined, true); }}
+          onStop={() => runner.current?.abort()}
+          onClose={() => setOutputOpen(false)}
+        />
+      )}
       <nav className={styles.mobileTabs}>
         <button type="button" onClick={() => setMobilePanel(null)} data-active={!mobilePanel}>Viewport</button>
         <button type="button" onClick={() => setMobilePanel('explorer')} data-active={mobilePanel === 'explorer'}>Explorer</button>

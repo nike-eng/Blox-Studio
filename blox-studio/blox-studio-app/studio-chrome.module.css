@@ -127,3 +127,7 @@
 .railValue { font-size: 0.74rem; font-weight: 700; color: var(--text); }
 .railBtn:disabled { opacity: 0.4; cursor: default; }
 .railBtnOn .railValue { color: #fff; }
+
+/* Short viewports (Output panel open): let the tool rail scroll instead of running under the Add button. */
+.rail { max-height: calc(100% - 88px); overflow-y: auto; scrollbar-width: none; }
+.rail::-webkit-scrollbar { display: none; }
