@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { SCRIPT_CLASSES, type PlaceInstance, type Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import { SCRIPT_CLASSES, runStudioScript, type Interpreter, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
 import { studioApi, type Project } from './studio-api.js';
 import { usePlaceEditor } from './use-place-editor.js';
 import { Viewport } from './viewport.js';
@@ -10,14 +10,14 @@ import { ScriptEditor } from './script-editor.js';
 import { TopBar, ToolRail, AddMenu, SelectionBar, SNAPS, type SnapLevel, type InsertItem } from './studio-chrome.js';
 import chrome from './studio-chrome.module.css';
 import { OutputPanel } from './output-panel.js';
-import { runStudioScript, type OutputKind, type OutputLine } from './studio-lua.js';
-import type { Interpreter } from './luau-lite.js';
 import { PublishDialog } from './publish-dialog.js';
 import { Playtest } from './playtest.js';
 import styles from './studio.module.css';
 
 function Editor({ project, setProject }: { project: Project; setProject: (p: Project) => void }) {
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
+  const saveStateRef = useRef(saveState);
+  saveStateRef.current = saveState;
   const pending = useRef<PlaceInstance[] | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const insertPointRef = useRef<() => Vec3>(() => [0, 5, 0]);
@@ -36,6 +36,9 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
   const runner = useRef<Interpreter | null>(null);
   const lineId = useRef(0);
 
+  const lastSeen = useRef(project.updatedAt);
+  const applyingRemote = useRef(false);
+
   const flush = useCallback(async () => {
     clearTimeout(timer.current);
     const instances = pending.current;
@@ -43,7 +46,8 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     pending.current = null;
     setSaveState('saving');
     try {
-      await studioApi.updateProject(project.id, { instances });
+      const saved = await studioApi.updateProject(project.id, { instances });
+      if (saved?.updatedAt) lastSeen.current = saved.updatedAt;
       setSaveState('saved');
     } catch {
       setSaveState('error');
@@ -51,6 +55,7 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
   }, [project.id]);
 
   const onChange = useCallback((instances: PlaceInstance[]) => {
+    if (applyingRemote.current) { applyingRemote.current = false; return; } // came from the server, nothing to save
     pending.current = instances;
     setSaveState('saving');
     clearTimeout(timer.current);
@@ -60,6 +65,24 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
   const editor = usePlaceEditor(project.instances, onChange);
   const latest = useRef(editor.instances);
   latest.current = editor.instances;
+
+  // Pick up edits made elsewhere (for example by a connected AI). Only when nothing of yours is waiting to be saved,
+  // and it lands as one undo step so you can take it back.
+  useEffect(() => {
+    const id = setInterval(async () => {
+      if (document.visibilityState !== 'visible' || pending.current || saveStateRef.current !== 'saved') return;
+      try {
+        const remote = await studioApi.getProject(project.id);
+        if (remote.updatedAt === lastSeen.current || pending.current) return;
+        lastSeen.current = remote.updatedAt;
+        if (JSON.stringify(remote.instances) !== JSON.stringify(latest.current)) {
+          applyingRemote.current = true;
+          editor.setAll(remote.instances);
+        }
+      } catch { /* offline: try again next time */ }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [project.id, editor.setAll]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const log = useCallback((kind: OutputKind, text: string) => {
     setOutputLines((ls) => [...ls.slice(-499), { id: ++lineId.current, kind, text, time: Date.now() }]);

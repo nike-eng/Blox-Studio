@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { OutputLine } from './studio-lua.js';
+import type { OutputLine } from '@robloc/blox-studio.rbxlx-serializer';
 import { Icon } from './icons.js';
 import s from './output-panel.module.css';
 

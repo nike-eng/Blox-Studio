@@ -172,3 +172,12 @@
   .propLabel { padding: 0.1rem 0.9rem 0.2rem; font-size: 0.74rem; color: #9aa1b2; }
   .propValue { padding: 0.1rem 0.9rem; }
 }
+
+/* ---- Connect an AI + publish checklist ---- */
+.aiLink { margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid #343844; }
+.aiLinkBox { width: 100%; box-sizing: border-box; margin: 0.5rem 0; padding: 0.6rem; border: 1px solid #343844; border-radius: 10px; background: #1c1e24; color: #e6e6e6; font: 12px/1.35 'Cascadia Code', Consolas, monospace; resize: none; word-break: break-all; }
+.aiLinkRow { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
+.checklist { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 4px; }
+.checklist li { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.85rem; color: #cfd3de; line-height: 1.35; }
+.checklist li[data-ok='false'] { color: #f0d78a; }
+.checkMark { flex-shrink: 0; width: 1.2rem; text-align: center; }

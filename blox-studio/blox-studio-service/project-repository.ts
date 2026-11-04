@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import { createHash, randomBytes } from 'node:crypto';
 import { createPlaceTemplate, type PlaceInstance, type PlaceTemplate } from '@robloc/blox-studio.rbxlx-serializer';
 
 /**
@@ -55,6 +56,11 @@ function toProject(doc: any): Project {
     createdAt: new Date(doc.createdAt).toISOString(),
   };
 }
+
+const McpLinkSchema = new Schema({ tokenHash: { type: String, index: true, unique: true }, ownerHash: { type: String, index: true } }, { timestamps: true });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const McpLinkModel: mongoose.Model<any> = mongoose.models.McpLink || mongoose.model('McpLink', McpLinkSchema);
+const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 
 /**
  * Data access for Blox Studio projects, backed by MongoDB.
@@ -113,6 +119,31 @@ export class ProjectRepository {
   /** Appends a publish record. */
   async addPublish(id: string, record: PublishRecord): Promise<void> {
     await ProjectModel.findByIdAndUpdate(id, { $push: { publishHistory: { $each: [record], $position: 0 } } });
+  }
+
+  /** Makes a new private AI link token for this owner (replacing any old one). The raw token is returned once and only its hash is stored. */
+  async createMcpLink(ownerHash: string): Promise<string> {
+    await McpLinkModel.deleteMany({ ownerHash });
+    const token = randomBytes(32).toString('hex');
+    await McpLinkModel.create({ tokenHash: sha(token), ownerHash });
+    return token;
+  }
+
+  /** Turns the owner's AI link off. */
+  async revokeMcpLink(ownerHash: string): Promise<void> {
+    await McpLinkModel.deleteMany({ ownerHash });
+  }
+
+  /** Whether the owner has an active AI link. */
+  async hasMcpLink(ownerHash: string): Promise<boolean> {
+    return (await McpLinkModel.countDocuments({ ownerHash })) > 0;
+  }
+
+  /** Finds the owner a token belongs to. */
+  async ownerForMcpToken(token: string): Promise<string | null> {
+    if (!/^[0-9a-f]{64}$/.test(token)) return null;
+    const doc = await McpLinkModel.findOne({ tokenHash: sha(token) }).lean();
+    return doc ? String(doc.ownerHash) : null;
   }
 
   /** Deletes a project. */

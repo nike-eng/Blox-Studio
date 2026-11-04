@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AiLink } from './ai-link.js';
 import { studioApi, type Project, type PublishRecord } from './studio-api.js';
 import styles from './studio.module.css';
 
@@ -26,6 +27,24 @@ export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose,
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<PublishRecord | null>(null);
+  const [check, setCheck] = useState<{ ready: boolean; items: { ok: boolean; text: string }[] } | null>(null);
+  const [sure, setSure] = useState(false);
+
+  // Re-check what is ready whenever the IDs change (after saving them).
+  useEffect(() => {
+    if (settingsOnly) return undefined;
+    let live = true;
+    const t = setTimeout(async () => {
+      try {
+        if (/^\d+$/.test(universeId) && /^\d+$/.test(placeId) && (universeId !== project.universeId || placeId !== project.placeId)) await onSaveIds(universeId, placeId);
+        const c = await studioApi.publishCheck(project.id);
+        if (live) setCheck(c);
+      } catch { if (live) setCheck(null); }
+    }, 500);
+    return () => { live = false; clearTimeout(t); };
+  }, [universeId, placeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { if (!sure) return undefined; const t = setTimeout(() => setSure(false), 5000); return () => clearTimeout(t); }, [sure]);
 
   useEffect(() => {
     studioApi.robloxStatus().then((s) => setConfigured(s.configured)).catch(() => setConfigured(false));
@@ -76,6 +95,14 @@ export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose,
           Find both on the Creator Dashboard: open your experience → the Universe ID is in the URL / “Copy Universe ID”, and the Place ID is under Places → “Copy Place ID”.
         </p>
 
+        {!settingsOnly && check && (
+          <ul className={styles.checklist} aria-label="Ready to publish?">
+            {check.items.map((it) => (
+              <li key={it.text} data-ok={it.ok}><span className={styles.checkMark} aria-hidden="true">{it.ok ? '✅' : '⚠️'}</span><span>{it.text}</span></li>
+            ))}
+          </ul>
+        )}
+
         {error && <div className={styles.errorBox}>{error}</div>}
         {result && (
           <div className={styles.successBox}>
@@ -86,20 +113,31 @@ export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose,
 
         <footer className={styles.dialogFooter}>
           {settingsOnly ? (
-            <button type="button" className={styles.publishBtn} disabled={busy || !idsValid} onClick={async () => { setBusy(true); await onSaveIds(universeId, placeId); setBusy(false); onClose(); }}>
-              Save
-            </button>
+            <>
+              <button type="button" className={styles.secondaryBtn} onClick={onClose}>Close</button>
+              <button type="button" className={styles.publishBtn} disabled={busy || !idsValid} onClick={async () => { setBusy(true); await onSaveIds(universeId, placeId); setBusy(false); onClose(); }}>
+                Save IDs
+              </button>
+            </>
           ) : (
             <>
               <button type="button" className={styles.secondaryBtn} disabled={busy || !idsValid || !configured} onClick={() => run('Saved')}>
                 Save to Roblox
               </button>
-              <button type="button" className={styles.publishBtn} disabled={busy || !idsValid || !configured} onClick={() => run('Published')}>
-                {busy ? 'Publishing…' : 'Publish live'}
+              <button
+                type="button"
+                className={styles.publishBtn}
+                disabled={busy || !idsValid || !configured}
+                onClick={() => { if (!sure) { setSure(true); return; } setSure(false); void run('Published'); }}
+                title="Makes this version live for players"
+              >
+                {busy ? 'Publishing…' : sure ? 'Tap again to go live' : 'Publish live'}
               </button>
             </>
           )}
         </footer>
+
+        {settingsOnly && <AiLink />}
 
         {!settingsOnly && project.publishHistory.length > 0 && (
           <div className={styles.history}>

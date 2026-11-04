@@ -1,4 +1,5 @@
-import { createInstance, SERVICE_CLASSES, type ClassName, type PlaceInstance, type Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import { createInstance } from './place-factory.js';
+import { SERVICE_CLASSES, type ClassName, type PlaceInstance, type Vec3 } from './place-types.js';
 import { Color3, Interpreter, LuaTable, LuauError, Multi, Vector3, tostr, type HostObject } from './luau-lite.js';
 
 /** One line shown in the Output panel. */

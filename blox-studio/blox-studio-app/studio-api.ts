@@ -32,6 +32,17 @@ export function serviceUrl(): string {
   return `${base}/blox-studio-service`;
 }
 
+/**
+ * Full public address of an AI link for a token.
+ * @param token - the one-time token returned when the link was made
+ * @returns the link to paste into an AI app
+ */
+export function aiLinkUrl(token: string): string {
+  const base = serviceUrl();
+  const origin = /^https?:/.test(base) ? '' : (typeof window !== 'undefined' ? window.location.origin : '');
+  return `${origin}${base}/mcp/${token}`;
+}
+
 let memoryToken = '';
 
 /**
@@ -84,6 +95,14 @@ export const studioApi = {
     request<PublishRecord>(`/projects/${id}/publish`, { method: 'POST', body: JSON.stringify({ versionType }) }),
   /** Whether the Roblox API key is configured on the server. */
   robloxStatus: () => request<{ configured: boolean }>('/roblox/status'),
+  /** Plain-language checklist of what is ready for publishing. */
+  publishCheck: (id: string) => request<{ ready: boolean; items: { ok: boolean; text: string }[] }>(`/projects/${id}/publish-check`),
+  /** Whether an AI link is switched on. */
+  aiLinkStatus: () => request<{ active: boolean }>('/mcp-link'),
+  /** Makes a new private AI link (the old one stops working). The token is shown once. */
+  createAiLink: () => request<{ token: string }>('/mcp-link', { method: 'POST' }),
+  /** Turns the AI link off. */
+  revokeAiLink: () => request<{ ok: boolean }>('/mcp-link', { method: 'DELETE' }),
   /** URL to download the .rbxlx file. */
   exportUrl: (id: string) => `${serviceUrl()}/projects/${id}/export?key=${ownerKey()}`,
 };

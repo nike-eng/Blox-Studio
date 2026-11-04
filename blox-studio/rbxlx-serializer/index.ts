@@ -7,3 +7,6 @@ export { BLOX_SERVER_RUNTIME, BLOX_CLIENT_RUNTIME } from './blox-runtime.js';
 export { MATERIALS, MATERIAL_NAMES } from './materials.js';
 export { SERVICE_CLASSES, PART_CLASSES, SCRIPT_CLASSES } from './place-types.js';
 export type { ClassName, PartShape, PartBehavior, PartMotion, Vec3, InstanceProps, PlaceInstance } from './place-types.js';
+export { Interpreter, LuaTable, LuauError, Vector3, Color3, parse, tostr } from './luau-lite.js';
+export { runStudioScript } from './studio-lua.js';
+export type { OutputKind, OutputLine, RunResult } from './studio-lua.js';
