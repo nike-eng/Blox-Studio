@@ -1,0 +1,26 @@
+{
+  "name": "blox-studio-standalone",
+  "private": true,
+  "type": "module",
+  "description": "Builds the Blox Studio web app outside Bit (for Cloudflare Pages, Vercel, etc.).",
+  "scripts": {
+    "prepare-src": "node prepare.mjs",
+    "build": "node prepare.mjs && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "@react-three/postprocessing": "3.2.2",
+    "@react-three/rapier": "2.2.0",
+    "postprocessing": "6.39.5",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-router-dom": "7.18.5",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.2.0",
+    "vite": "8.3.5"
+  }
+}

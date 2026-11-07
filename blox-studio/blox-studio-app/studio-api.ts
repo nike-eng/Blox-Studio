@@ -28,6 +28,9 @@ export type Project = ProjectSummary & { instances: PlaceInstance[] };
  * @returns base url
  */
 export function serviceUrl(): string {
+  // Standalone hosting (Cloudflare etc.): the build sets VITE_SERVICE_URL to the server's address.
+  const direct = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_SERVICE_URL;
+  if (direct) return direct.replace(/\/+$/, '');
   const base = (typeof process !== 'undefined' && process.env?.BACKEND_URL) || '';
   return `${base}/blox-studio-service`;
 }
