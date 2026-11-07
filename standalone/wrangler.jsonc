@@ -1,0 +1,9 @@
+{
+  // Hosts the built Blox Studio web app as static files on Cloudflare.
+  "name": "blox-studio",
+  "compatibility_date": "2025-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
