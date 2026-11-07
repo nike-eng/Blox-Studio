@@ -72,7 +72,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', 'x-owner-key': ownerKey(), ...(init.headers || {}) },
   });
-  const json = await res.json().catch(() => ({}));
+  const text = await res.text().catch(() => '');
+  let json: { message?: string } = {};
+  try { json = text ? JSON.parse(text) : {}; } catch {
+    // Not JSON (for example the web page itself, when no server is connected yet).
+    if (res.ok) throw new Error('The Blox Studio server is not connected yet, so projects cannot be loaded or saved.');
+  }
   if (!res.ok) throw new Error(json.message || `Request failed (${res.status})`);
   return json as T;
 }

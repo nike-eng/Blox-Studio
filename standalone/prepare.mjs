@@ -1,5 +1,5 @@
 // Copies the app + serializer source into ./.src with a plain tsconfig, so the build does not depend on Bit's generated files.
-import { cpSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,4 +15,9 @@ if (existsSync(path.join(here, 'public'))) cpSync(path.join(here, 'public'), pat
 writeFileSync(path.join(out, 'tsconfig.json'), JSON.stringify({
   compilerOptions: { target: 'ES2022', module: 'ESNext', moduleResolution: 'bundler', jsx: 'react-jsx', strict: false, skipLibCheck: true, lib: ['ES2022', 'DOM', 'DOM.Iterable'], types: ['vite/client'] },
 }, null, 2));
+
+// Show any crash on screen instead of a blank white page.
+const indexPath = path.join(out, 'app', 'index.html');
+const guard = `<script>(function(){function show(m){try{var d=document.getElementById('bs-crash');if(!d){d=document.createElement('pre');d.id='bs-crash';d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;max-height:45vh;overflow:auto;margin:0;padding:12px;background:#2b0b0b;color:#ffd6d6;font:12px/1.4 monospace;border-radius:8px;z-index:99999;white-space:pre-wrap';document.body.appendChild(d);}d.textContent='Blox Studio hit an error:\\n'+m;}catch(e){}}window.addEventListener('error',function(e){show(String(e.message||e.error))});window.addEventListener('unhandledrejection',function(e){show(String(e.reason&&e.reason.message||e.reason))});})();</script>`;
+writeFileSync(indexPath, readFileSync(indexPath, 'utf8').replace('<style>', guard + '<style>'));
 console.log('prepared .src');
