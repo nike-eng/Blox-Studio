@@ -1,4 +1,4 @@
-import { createInstance, runStudioScript, SERVICE_CLASSES, PART_CLASSES, type ClassName, type InstanceProps, type PlaceInstance, type PlaceTemplate, type Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import { createInstance, runStudioScript, SERVICE_CLASSES, PART_CLASSES, type ClassName, type InstanceProps, type PlaceInstance, type PlaceTemplate, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import type { Project } from './project-repository.js';
 
 /**

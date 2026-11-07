@@ -1,4 +1,4 @@
-import { createPlaceTemplate, type PlaceInstance } from '@robloc/blox-studio.rbxlx-serializer';
+import { createPlaceTemplate, type PlaceInstance } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { handleRpc, type McpStore } from './mcp.js';
 import type { Project } from './project-repository.js';
 

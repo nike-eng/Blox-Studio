@@ -5,7 +5,7 @@ import {
   RigidBody, CuboidCollider, ConvexHullCollider, BallCollider, CylinderCollider, CapsuleCollider,
   useBeforePhysicsStep, useRapier, type RapierRigidBody, type RapierCollider,
 } from '@react-three/rapier';
-import type { PlaceInstance, Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import type { PlaceInstance, Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { PartVisual, WEDGE_POINTS, CORNER_WEDGE_POINTS } from './part-visual.js';
 import { PlaytestAvatar, type AvatarAnim } from './playtest-avatar.js';
 import { ParticleBurst, type Burst } from './particle-burst.js';

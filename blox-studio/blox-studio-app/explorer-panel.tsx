@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SCRIPT_CLASSES, SERVICE_CLASSES, type ClassName, type PlaceInstance } from '@robloc/blox-studio.rbxlx-serializer';
+import { SCRIPT_CLASSES, SERVICE_CLASSES, type ClassName, type PlaceInstance } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { subtreeIds } from './use-place-editor.js';
 import type { PlaceEditor } from './use-place-editor.js';
 import { ClassIcon } from './class-icon.js';

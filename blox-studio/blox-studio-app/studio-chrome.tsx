@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import type { ClassName, InstanceProps } from '@robloc/blox-studio.rbxlx-serializer';
+import type { ClassName, InstanceProps } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import type { PlaceEditor, Tool } from './use-place-editor.js';
 import { Icon, type IconName } from './icons.js';
 import s from './studio-chrome.module.css';

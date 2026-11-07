@@ -1,4 +1,4 @@
-import { toRbxlx, type PlaceTemplate } from '@robloc/blox-studio.rbxlx-serializer';
+import { toRbxlx, type PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { ProjectRepository, type Project } from './project-repository.js';
 import { RobloxPublisher } from './roblox-publisher.js';
 

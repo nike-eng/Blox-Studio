@@ -1,4 +1,4 @@
-import type { ClassName, InstanceProps } from '@robloc/blox-studio.rbxlx-serializer';
+import type { ClassName, InstanceProps } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import type { PlaceEditor, Tool } from './use-place-editor.js';
 import styles from './studio.module.css';
 

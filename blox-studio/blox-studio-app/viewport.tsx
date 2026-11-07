@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'rea
 import * as THREE from 'three';
 import { Canvas, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, TransformControls, GizmoHelper, GizmoViewport, Edges, Html } from '@react-three/drei';
-import { PART_CLASSES, type PlaceInstance, type Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import { PART_CLASSES, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import type { PlaceEditor } from './use-place-editor.js';
 import { subtreeIds } from './use-place-editor.js';
 import { DEG, PartVisual, geometryFor } from './part-visual.js';

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { SCRIPT_CLASSES, runStudioScript, type Interpreter, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import { SCRIPT_CLASSES, runStudioScript, type Interpreter, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { studioApi, type Project } from './studio-api.js';
 import { usePlaceEditor } from './use-place-editor.js';
 import { Viewport } from './viewport.js';

@@ -6,7 +6,7 @@ import {
   type ClassName,
   type InstanceProps,
   type PlaceInstance,
-} from '@robloc/blox-studio.rbxlx-serializer';
+} from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 
 /**
  * Active transform tool, like Roblox Studio's Select / Move / Scale / Rotate.

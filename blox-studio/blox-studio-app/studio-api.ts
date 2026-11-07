@@ -1,4 +1,4 @@
-import type { PlaceInstance, PlaceTemplate } from '@robloc/blox-studio.rbxlx-serializer';
+import type { PlaceInstance, PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 
 /**
  * Publish history entry.

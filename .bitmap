@@ -12,9 +12,30 @@
     "blox-studio-app": {
         "name": "blox-studio-app",
         "scope": "nikethbhat4thh.blox-studio",
-        "version": "0.0.1",
+        "version": "f9f46b67e0ee2be958dea7e2b245f5bfa58736ab",
         "mainFile": "index.ts",
         "rootDir": "blox-studio/blox-studio-app"
+    },
+    "blox-studio-platform": {
+        "name": "blox-studio-platform",
+        "scope": "nikethbhat4thh.blox-studio",
+        "version": "f3925f866510a7fdee0bdef01ee2ef0f75b025ea",
+        "mainFile": "index.ts",
+        "rootDir": "blox-studio/blox-studio-platform"
+    },
+    "blox-studio-service": {
+        "name": "blox-studio-service",
+        "scope": "nikethbhat4thh.blox-studio",
+        "version": "5dc1083706ffd95d88497e6777318425e96082e2",
+        "mainFile": "index.ts",
+        "rootDir": "blox-studio/blox-studio-service"
+    },
+    "rbxlx-serializer": {
+        "name": "rbxlx-serializer",
+        "scope": "nikethbhat4thh.blox-studio",
+        "version": "747519718bfb974663865f1030dd4dcd6d63268d",
+        "mainFile": "index.ts",
+        "rootDir": "blox-studio/rbxlx-serializer"
     },
     "$schema-version": "17.0.0"
 }

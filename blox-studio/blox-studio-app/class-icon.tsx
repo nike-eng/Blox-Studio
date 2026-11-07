@@ -1,4 +1,4 @@
-import type { ClassName } from '@robloc/blox-studio.rbxlx-serializer';
+import type { ClassName } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import styles from './studio.module.css';
 
 const ICONS: Record<ClassName, { color: string; glyph: string }> = {

@@ -1,7 +1,7 @@
 import { forwardRef, useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
-import type { PlaceInstance, Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import type { PlaceInstance, Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { tiledTexture } from './material-textures.js';
 
 /** Degrees → radians. */

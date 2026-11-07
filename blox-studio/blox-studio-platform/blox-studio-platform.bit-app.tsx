@@ -1,7 +1,7 @@
 import { Platform } from '@bitdev/platforms.platform';
 
-const BloxStudioService = import.meta.resolve('@robloc/blox-studio.blox-studio-service');
-const BloxStudioApp = import.meta.resolve('@robloc/blox-studio.blox-studio-app');
+const BloxStudioService = import.meta.resolve('@nikethbhat4thh/blox-studio.blox-studio-service');
+const BloxStudioApp = import.meta.resolve('@nikethbhat4thh/blox-studio.blox-studio-app');
 const PlatformGateway = import.meta.resolve('@bitdev/platforms.backend.gateway-server');
 
 /**

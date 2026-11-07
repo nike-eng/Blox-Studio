@@ -10,7 +10,7 @@ the Roblox XML place format accepted by Roblox Studio and the Open Cloud Place P
 ### Create a place and serialize it
 
 ```ts
-import { createPlaceTemplate, toRbxlx } from '@robloc/blox-studio.rbxlx-serializer';
+import { createPlaceTemplate, toRbxlx } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 
 const instances = createPlaceTemplate('baseplate');
 const xml = toRbxlx(instances);
@@ -19,7 +19,7 @@ const xml = toRbxlx(instances);
 ### Add a part
 
 ```ts
-import { createInstance } from '@robloc/blox-studio.rbxlx-serializer';
+import { createInstance } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 
 const part = createInstance('Part', 'Workspace', { color: '#ff0000', position: [0, 5, 0] });
 ```

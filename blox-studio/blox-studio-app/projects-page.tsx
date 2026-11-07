@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { PlaceTemplate } from '@robloc/blox-studio.rbxlx-serializer';
+import type { PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { studioApi, type ProjectSummary } from './studio-api.js';
 import styles from './home.module.css';
 

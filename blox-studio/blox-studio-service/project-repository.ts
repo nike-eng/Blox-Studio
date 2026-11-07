@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { createHash, randomBytes } from 'node:crypto';
-import { createPlaceTemplate, type PlaceInstance, type PlaceTemplate } from '@robloc/blox-studio.rbxlx-serializer';
+import { createPlaceTemplate, type PlaceInstance, type PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 
 /**
  * Publish history entry for a project.

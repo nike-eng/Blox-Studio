@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
-import { PART_CLASSES, type PlaceInstance, type Vec3 } from '@robloc/blox-studio.rbxlx-serializer';
+import { PART_CLASSES, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { subtreeIds } from './use-place-editor.js';
 import { DEG } from './part-visual.js';
 

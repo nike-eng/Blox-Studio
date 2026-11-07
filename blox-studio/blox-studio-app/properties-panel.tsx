@@ -1,4 +1,4 @@
-import { MATERIAL_NAMES, PART_CLASSES, SCRIPT_CLASSES, SERVICE_CLASSES, type PartBehavior, type PartMotion, type PartShape } from '@robloc/blox-studio.rbxlx-serializer';
+import { MATERIAL_NAMES, PART_CLASSES, SCRIPT_CLASSES, SERVICE_CLASSES, type PartBehavior, type PartMotion, type PartShape } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import type { PlaceEditor } from './use-place-editor.js';
 import { NumberField, PropRow, TextField, Vec3Field } from './property-fields.js';
 import styles from './studio.module.css';
