@@ -23,8 +23,13 @@ export function ProjectsPage() {
   useEffect(() => { load(); }, []);
 
   const create = async (template: PlaceTemplate) => {
-    const project = await studioApi.createProject(name.trim() || `My ${template} place`, template);
-    navigate(`/studio/${project.id}`);
+    try {
+      setError('');
+      const project = await studioApi.createProject(name.trim() || `My ${template} place`, template);
+      navigate(`/studio/${project.id}`);
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
 
   return (
