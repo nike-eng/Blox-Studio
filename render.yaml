@@ -1,0 +1,19 @@
+# Render Blueprint: hosts the Blox Studio server for free.
+# Secrets (MONGO_URL, ROBLOX_API_KEY) are typed into Render's dashboard and never stored in this repo.
+services:
+  - type: web
+    name: blox-studio-server
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: CORS_ORIGIN
+        value: https://blox-studio.nikethbhat4thh-7ce.workers.dev
+      - key: MONGO_URL
+        sync: false
+      - key: ROBLOX_API_KEY
+        sync: false

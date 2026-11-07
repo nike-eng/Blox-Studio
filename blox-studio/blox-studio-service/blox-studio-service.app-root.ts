@@ -9,6 +9,23 @@ export function run() {
   const port = process.env.PORT || 3000;
   const ready = service.init().catch((err) => console.error('Failed to init storage', err));
 
+  // Browser access from another website (for example the Cloudflare-hosted web app).
+  // Set CORS_ORIGIN to that site's address; separate several with commas. Without it, no other site is allowed.
+  const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean);
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Headers', 'content-type, x-owner-key');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Max-Age', '600');
+      res.setHeader('Vary', 'Origin');
+    }
+    if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+    next();
+  });
+
   app.use(express.json({ limit: '20mb' }));
   app.use(async (_req, _res, next) => { await ready; next(); });
 
