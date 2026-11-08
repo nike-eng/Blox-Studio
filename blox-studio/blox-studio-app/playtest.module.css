@@ -1,13 +1,13 @@
 .overlay { position: fixed; top: 0; left: 0; width: 100%; height: var(--app-h, 100vh); overflow: hidden; z-index: 100; background: #0b1020; font-family: 'Inter', system-ui, sans-serif; color: #fff; user-select: none; }
 .canvas { position: absolute; inset: 0; touch-action: none; }
 
-.robloxMenuBtn {
+.menuBtn {
   width: 44px; height: 44px; border-radius: 10px; border: none; cursor: pointer;
   background: rgba(17, 20, 31, 0.6); display: inline-flex; align-items: center; justify-content: center;
 }
-.robloxMenuBtn:hover { background: rgba(17, 20, 31, 0.8); }
-.robloxLogo { width: 20px; height: 20px; border: 3px solid #fff; border-radius: 3px; transform: rotate(15deg); position: relative; box-sizing: border-box; }
-.robloxLogo::after { content: ''; position: absolute; inset: 3px; background: #fff; }
+.menuBtn:hover { background: rgba(17, 20, 31, 0.8); }
+.menuIcon { display: flex; flex-direction: column; gap: 4px; }
+.menuIcon i { display: block; width: 20px; height: 3px; border-radius: 2px; background: #fff; }
 
 .leaderboard {
   position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); min-width: 180px; border-radius: 8px; overflow: hidden;

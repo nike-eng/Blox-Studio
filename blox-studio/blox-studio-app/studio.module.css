@@ -1,4 +1,9 @@
 .studio { height: var(--app-h, 100vh); display: flex; flex-direction: column; overflow: hidden; background: #2e2e2e; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
+.banner { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; flex-shrink: 0; padding: 0.5rem 0.9rem; background: #2a3a52; border-bottom: 1px solid #3b5278; color: #dbe7ff; font-size: 0.85rem; }
+.banner span { flex: 1 1 220px; }
+.banner button { min-height: 36px; padding: 0 0.9rem; border-radius: 999px; border: 1px solid #5b7db8; background: #35507a; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.bannerError { background: #4a2326; border-color: #7a3a3f; color: #ffd9d6; }
+.bannerError button { background: #7a3a3f; border-color: #a65158; }
 .loading { padding: 3rem; text-align: center; color: #a8abb3; }
 .loading a { color: #8ab4f8; }
 

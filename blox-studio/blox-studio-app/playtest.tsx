@@ -201,8 +201,8 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
       <PlaytestScene key={runKey} instances={instances} input={input} session={session} onEvent={onEvent} quality={quality} fps={fps} />
 
       <div className={styles.topLeft}>
-        <button className={styles.robloxMenuBtn} onClick={() => setMenu((m) => !m)} aria-label="Menu (Esc)" title="Menu (Esc)">
-          <span className={styles.robloxLogo} />
+        <button className={styles.menuBtn} onClick={() => setMenu((m) => !m)} aria-label="Menu (Esc)" title="Menu (Esc)">
+          <span className={styles.menuIcon} aria-hidden="true"><i /><i /><i /></span>
         </button>
         <button className={styles.stopBtn} onClick={onStop} title="Stop playtest"><span className={styles.stopIcon} /> Stop</button>
       </div>

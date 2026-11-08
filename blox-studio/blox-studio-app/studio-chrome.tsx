@@ -60,9 +60,17 @@ const TOOLS: { id: Tool; label: string; key: string; icon: IconName; hint: strin
 /**
  * Props for the top bar.
  */
+export type SaveState = 'saved' | 'unsaved' | 'saving' | 'error';
+
 export type TopBarProps = {
   projectName: string;
-  saveState: 'saved' | 'saving' | 'error';
+  saveState: SaveState;
+  /** Saves the place now. */
+  onSave: () => void;
+  /** Called before leaving the editor; return false to stay (for example when there are unsaved changes). */
+  confirmLeave?: () => boolean;
+  /** True while a save is taking long (the free server may be waking up). */
+  saveSlow?: boolean;
   editor: PlaceEditor;
   onPlay: () => void;
   onExport: () => void;
@@ -75,22 +83,35 @@ export type TopBarProps = {
   outputErrors?: number;
 };
 
+const SAVE_LABEL: Record<SaveState, string> = { saved: 'Saved', unsaved: 'Save', saving: 'Saving…', error: 'Retry save' };
+
+/**
+ * The Save button. It lights up when there is something to save and says clearly what happened.
+ */
+export function SaveButton({ state, slow, onSave }: { state: SaveState; slow?: boolean; onSave: () => void }) {
+  const title = state === 'saved' ? 'Everything is saved' : state === 'saving' ? (slow ? 'Waking up the server, this can take a minute…' : 'Saving…') : state === 'error' ? 'Saving failed. Tap to try again (Ctrl+S)' : 'Save your place (Ctrl+S)';
+  return (
+    <button type="button" className={s.saveBtn} data-state={state} onClick={onSave} disabled={state === 'saving'} title={title} aria-label={SAVE_LABEL[state]}>
+      <Icon name={state === 'saved' ? 'check' : 'save'} size={18} />
+      <span className={s.saveBtnText}>{state === 'saving' && slow ? 'Waking server…' : SAVE_LABEL[state]}</span>
+      {state === 'unsaved' && <span className={s.saveDot} aria-hidden="true" />}
+    </button>
+  );
+}
+
 /**
  * Slim top bar: where you are, undo/redo, and the three big actions (Play, Export, Publish).
  */
-export function TopBar({ projectName, saveState, editor, onPlay, onExport, onPublish, onSettings, onToggleOutput, outputOpen, outputErrors = 0 }: TopBarProps) {
+export function TopBar({ projectName, saveState, onSave, confirmLeave, saveSlow, editor, onPlay, onExport, onPublish, onSettings, onToggleOutput, outputOpen, outputErrors = 0 }: TopBarProps) {
   const { undo, redo, canUndo, canRedo } = editor;
   return (
     <header className={s.top} role="toolbar" aria-label="Studio">
-      <Link to="/" className={s.brand} title="Back to your places">
+      <Link to="/projects" className={s.brand} title="Back to your places" onClick={(e) => { if (confirmLeave && !confirmLeave()) e.preventDefault(); }}>
         <span className={s.logo}>◆</span>
         <span className={s.brandText}>Blox Studio</span>
       </Link>
       <span className={s.projectName} title={projectName}>{projectName}</span>
-      <span className={s.save} data-state={saveState} role="status">
-        <Icon name={saveState === 'saved' ? 'check' : 'more'} size={14} />
-        <span className={s.saveText}>{saveState === 'saving' ? 'Saving…' : saveState === 'error' ? 'Not saved' : 'Saved'}</span>
-      </span>
+      <SaveButton state={saveState} slow={saveSlow} onSave={onSave} />
       <span className={s.spacer} />
       <div className={s.group}>
         <button type="button" className={s.iconBtn} disabled={!canUndo} onClick={undo} title="Undo (Ctrl+Z)" aria-label="Undo"><Icon name="undo" /></button>

@@ -60,3 +60,5 @@
 @media (max-width: 767px) {
   .badge, .badgeLinked { display: none; }
 }
+
+.disclaimer { margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid #343844; color: #8c93a3; font-size: 0.78rem; line-height: 1.5; }

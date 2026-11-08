@@ -66,19 +66,39 @@ export function ownerKey(): string {
   return key;
 }
 
+/**
+ * An error from the server. `status` is 0 when the server could not be reached at all.
+ */
+export class ApiError extends Error {
+  constructor(message: string, public status = 0) { super(message); this.name = 'ApiError'; }
+  /** True for problems that usually go away on their own (server waking up, bad connection). */
+  get temporary(): boolean { return this.status === 0 || this.status >= 500 || this.status === 429; }
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${serviceUrl()}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', 'x-owner-key': ownerKey(), ...(init.headers || {}) },
-  });
+  // The free server sleeps when nobody uses it and can take about a minute to wake up.
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 75000);
+  let res: Response;
+  try {
+    res = await fetch(`${serviceUrl()}${path}`, {
+      ...init,
+      signal: abort.signal,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'x-owner-key': ownerKey(), ...(init.headers || {}) },
+    });
+  } catch {
+    throw new ApiError(abort.signal.aborted ? 'The server took too long to answer.' : 'Could not reach the Blox Studio server. Check your internet connection.', 0);
+  } finally {
+    clearTimeout(timer);
+  }
   const text = await res.text().catch(() => '');
   let json: { message?: string } = {};
   try { json = text ? JSON.parse(text) : {}; } catch {
-    // Not JSON (for example the web page itself, when no server is connected yet).
-    throw new Error('The Blox Studio server is not connected yet, so projects cannot be loaded or saved.');
+    // Not JSON: the page itself (no server connected) or a "waking up" page from the host.
+    throw new ApiError('The Blox Studio server is not answering yet. It may be waking up, so try again in a minute.', res.status >= 500 ? res.status : 503);
   }
-  if (!res.ok) throw new Error(json.message || `Request failed (${res.status})`);
+  if (!res.ok) throw new ApiError(json.message || `Request failed (${res.status})`, res.status);
   return json as T;
 }
 
