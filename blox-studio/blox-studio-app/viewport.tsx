@@ -192,7 +192,7 @@ export function Viewport({ editor, insertPointRef, focusRef, snap = { studs: 1, 
     <Canvas
       shadows
       dpr={[1, 1.5]}
-      gl={{ powerPreference: 'high-performance' }}
+      gl={{ powerPreference: 'high-performance', toneMapping: THREE.NeutralToneMapping }}
       camera={{ position: start.current.camera, fov: 60, near: 0.5, far: 5000 }}
       onPointerMissed={() => { if (!draggingRef.current) setSelectedId(null); }}
     >

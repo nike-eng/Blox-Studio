@@ -137,3 +137,5 @@
   .lbName { max-width: 90px; }
   .fps { display: none; }
 }
+
+.menuNote { margin: -6px 0 16px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 196, 0, 0.12); border: 1px solid rgba(255, 196, 0, 0.35); color: #f5dc8c; font-size: 0.85rem; line-height: 1.45; }
