@@ -1,4 +1,4 @@
-.studio { height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: #2e2e2e; }
+.studio { height: var(--app-h, 100vh); display: flex; flex-direction: column; overflow: hidden; background: #2e2e2e; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
 .loading { padding: 3rem; text-align: center; color: #a8abb3; }
 .loading a { color: #8ab4f8; }
 
@@ -48,9 +48,9 @@
 .center { flex: 1; min-width: 0; display: flex; }
 .viewport { flex: 1; position: relative; }
 .viewportHint { position: absolute; left: 0.75rem; bottom: 0.6rem; font-size: 0.72rem; color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.35); padding: 0.25rem 0.5rem; border-radius: 4px; pointer-events: none; }
-.sidebar { width: 300px; display: flex; flex-direction: column; border-left: 1px solid #222; background: #2e2e2e; }
-.sidebar > div { flex: 1; min-height: 0; display: flex; }
-.panel { flex: 1; display: flex; flex-direction: column; min-height: 0; border-bottom: 1px solid #222; font-size: 0.8rem; }
+.sidebar { width: 300px; flex-shrink: 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; border-left: 1px solid #222; background: #2e2e2e; }
+.sidebar > div { flex: 1; min-height: 0; min-width: 0; display: flex; }
+.panel { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; border-bottom: 1px solid #222; font-size: 0.8rem; }
 .panelHeader { padding: 0.35rem 0.6rem; background: #3a3a3a; font-weight: 600; font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panelBody { flex: 1; overflow: auto; padding-bottom: 0.5rem; }
 .filterInput { margin: 0.35rem; padding: 0.3rem 0.5rem; border-radius: 3px; border: 1px solid #444; background: #252525; color: inherit; font-size: 0.75rem; }
@@ -88,8 +88,8 @@
 .gutter { padding: 8px 8px 8px 12px; text-align: right; color: #6e7681; background: #1e1e1e; overflow: hidden; user-select: none; min-width: 44px; }
 .code { flex: 1; resize: none; border: none; outline: none; background: #1e1e1e; color: #d4d4d4; padding: 8px; font: inherit; tab-size: 4; white-space: pre; overflow: auto; }
 
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
-.dialog { width: 100%; max-width: 480px; max-height: 90vh; overflow: auto; background: #2b2d33; border: 1px solid #40434c; border-radius: 12px; padding: 1.25rem; font-size: 0.9rem; }
+.overlay { position: fixed; top: 0; left: 0; width: 100%; height: var(--app-h, 100vh); background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+.dialog { width: 100%; max-width: 480px; max-height: calc(var(--app-h, 100vh) * 0.9); overflow: auto; background: #2b2d33; border: 1px solid #40434c; border-radius: 12px; padding: 1.25rem; font-size: 0.9rem; }
 .dialogHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .dialogHeader h2 { margin: 0; font-size: 1.15rem; }
 .dialogFooter { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
@@ -112,7 +112,7 @@
 
 @media (max-width: 767px) {
   .titleBar { height: 40px; }
-  .sidebar { display: none; position: absolute; inset: 0; top: auto; height: 55vh; width: 100%; z-index: 10; border-left: none; border-top: 1px solid #222; bottom: 52px; }
+  .sidebar { display: none; position: absolute; inset: 0; top: auto; height: calc(var(--app-h, 100vh) * 0.55); width: 100%; z-index: 10; border-left: none; border-top: 1px solid #222; bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
   .sidebarOpen { display: flex; }
   .hideMobile { display: none !important; }
   .workArea { position: relative; }
@@ -139,7 +139,7 @@
 .sidebar { background: #1c1e24; border-left: 1px solid #343844; }
 .panel { border-bottom: 1px solid #343844; font-size: 0.84rem; }
 .panelHeader { padding: 0.6rem 0.9rem; background: #1c1e24; color: #9aa1b2; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid #2b2e38; }
-.filterInput { margin: 0.5rem 0.7rem; padding: 0.5rem 0.7rem; border-radius: 10px; border: 1px solid #343844; background: #262932; font-size: 0.82rem; }
+.filterInput { width: calc(100% - 1.4rem); min-width: 0; margin: 0.5rem 0.7rem; padding: 0.5rem 0.7rem; border-radius: 10px; border: 1px solid #343844; background: #262932; font-size: 0.82rem; }
 .filterInput:focus, .propInput:focus, .textInput:focus { outline: 2px solid #2f9bff; outline-offset: 0; border-color: transparent; }
 .treeRow { height: 34px; padding-left: 0.15rem; border-radius: 8px; margin: 0 0.4rem; }
 .treeRow:hover { background: #262932; }
@@ -158,12 +158,12 @@
 .textInput { border-radius: 10px; border: 1px solid #343844; background: #1c1e24; }
 .primaryBtn { border-radius: 10px; min-height: 44px; background: linear-gradient(180deg, #3aa5ff, #2486e6); font-weight: 700; }
 .secondaryBtn { border-radius: 10px; min-height: 44px; border-color: #343844; }
-.mobileTabs { background: #1c1e24; border-top: 1px solid #343844; height: 56px; }
+.mobileTabs { background: #1c1e24; border-top: 1px solid #343844; height: calc(56px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); }
 .mobileTabs button { font-weight: 600; }
 .mobileTabs button[data-active='true'] { color: #2f9bff; box-shadow: inset 0 3px 0 #2f9bff; }
 .loading { color: #9aa1b2; }
 @media (max-width: 767px) {
-  .sidebar { bottom: 56px; background: #1c1e24; border-top: 1px solid #343844; border-radius: 18px 18px 0 0; }
+  .sidebar { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); background: #1c1e24; border-top: 1px solid #343844; border-radius: 18px 18px 0 0; }
 }
 
 @media (max-width: 1100px) and (min-width: 768px) {

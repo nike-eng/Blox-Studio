@@ -65,7 +65,7 @@
 .addBtn:active { transform: scale(0.96); }
 
 .sheet {
-  position: absolute; left: 12px; bottom: 76px; z-index: 6; width: min(460px, calc(100% - 24px)); max-height: min(70vh, calc(100% - 100px)); overflow: auto;
+  position: absolute; left: 12px; bottom: 76px; z-index: 6; width: min(460px, calc(100% - 24px)); max-height: min(calc(var(--app-h, 100vh) * 0.7), calc(100% - 100px)); overflow: auto;
   padding: 0.5rem 1rem 1rem; background: rgba(38, 41, 50, 0.97); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   outline: none;
 }
