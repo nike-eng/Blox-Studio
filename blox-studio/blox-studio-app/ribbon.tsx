@@ -49,7 +49,7 @@ export type RibbonProps = {
 };
 
 /**
- * Roblox Studio-style ribbon with Play, transform tools, part and obby-element insertion,
+ * Roblox Studio-style ribbon with Play, transform tools, part and course-piece insertion,
  * edit actions and publishing.
  */
 export function Ribbon({ editor, onInsert, onInsertScript, saveState, onPlay, onPublish, onExport, onSettings }: RibbonProps) {
@@ -96,7 +96,7 @@ export function Ribbon({ editor, onInsert, onInsertScript, saveState, onPlay, on
       </div>
       <div className={styles.ribbonGroup}>
         <div className={styles.ribbonButtons}>{OBBY.map(btn)}</div>
-        <span className={styles.ribbonLabel}>Obby kit</span>
+        <span className={styles.ribbonLabel}>Course kit</span>
       </div>
       <div className={styles.ribbonGroup}>
         <div className={styles.ribbonButtons}>

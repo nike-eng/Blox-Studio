@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Builds the Blox Studio web app without Bit. `npm run build` first copies the source to ./.src (see prepare.mjs).
+// Builds the VoxMesa web app without Bit. `npm run build` first copies the source to ./.src (see prepare.mjs).
 const here = path.dirname(fileURLToPath(import.meta.url));
 const src = path.join(here, '.src');
 const modules = path.join(here, 'node_modules');

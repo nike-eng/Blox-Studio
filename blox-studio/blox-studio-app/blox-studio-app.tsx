@@ -7,7 +7,7 @@ import { trackViewportHeight } from './viewport-height.js';
 import './base.module.css';
 
 /**
- * Blox Studio: a browser-based Roblox place editor that publishes to Roblox via Open Cloud.
+ * VoxMesa: a browser-based 3D place editor that can export Roblox place files and publish them via Open Cloud.
  */
 export function BloxStudioApp() {
   useLayoutEffect(() => trackViewportHeight(), []);

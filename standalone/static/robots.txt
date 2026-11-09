@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /studio/
+
+Sitemap: https://blox-studio.nikethbhat4thh-7ce.workers.dev/sitemap.xml

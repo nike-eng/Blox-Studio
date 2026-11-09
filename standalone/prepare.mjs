@@ -11,7 +11,9 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 cpSync(path.join(here, '../blox-studio/blox-studio-app'), path.join(out, 'app'), { recursive: true, filter: skip });
 cpSync(path.join(here, '../blox-studio/rbxlx-serializer'), path.join(out, 'rbxlx-serializer'), { recursive: true, filter: skip });
-if (existsSync(path.join(here, 'public'))) cpSync(path.join(here, 'public'), path.join(out, 'public'), { recursive: true });
+// `static/` holds the favicon, robots.txt and sitemap.xml (a folder named `public` is ignored by git, so it is not used).
+mkdirSync(path.join(out, 'public'), { recursive: true });
+for (const dir of ['public', 'static']) if (existsSync(path.join(here, dir))) cpSync(path.join(here, dir), path.join(out, 'public'), { recursive: true });
 writeFileSync(path.join(out, 'tsconfig.json'), JSON.stringify({
   compilerOptions: { target: 'ES2022', module: 'ESNext', moduleResolution: 'bundler', jsx: 'react-jsx', strict: false, skipLibCheck: true, lib: ['ES2022', 'DOM', 'DOM.Iterable'], types: ['vite/client'] },
 }, null, 2));
@@ -26,6 +28,6 @@ if (existsSync(basePath)) {
 
 // Show any crash on screen instead of a blank white page.
 const indexPath = path.join(out, 'app', 'index.html');
-const guard = `<script>(function(){function show(m){try{var d=document.getElementById('bs-crash');if(!d){d=document.createElement('pre');d.id='bs-crash';d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;max-height:45vh;overflow:auto;margin:0;padding:12px;background:#2b0b0b;color:#ffd6d6;font:12px/1.4 monospace;border-radius:8px;z-index:99999;white-space:pre-wrap';document.body.appendChild(d);}d.textContent='Blox Studio hit an error:\\n'+m;}catch(e){}}window.addEventListener('error',function(e){show(String(e.message||e.error))});window.addEventListener('unhandledrejection',function(e){show(String(e.reason&&e.reason.message||e.reason))});})();</script>`;
+const guard = `<script>(function(){function show(m){try{var d=document.getElementById('bs-crash');if(!d){d=document.createElement('pre');d.id='bs-crash';d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;max-height:45vh;overflow:auto;margin:0;padding:12px;background:#2b0b0b;color:#ffd6d6;font:12px/1.4 monospace;border-radius:8px;z-index:99999;white-space:pre-wrap';document.body.appendChild(d);}d.textContent='VoxMesa hit an error:\\n'+m;}catch(e){}}window.addEventListener('error',function(e){show(String(e.message||e.error))});window.addEventListener('unhandledrejection',function(e){show(String(e.reason&&e.reason.message||e.reason))});})();</script>`;
 writeFileSync(indexPath, readFileSync(indexPath, 'utf8').replace('<style>', guard + '<style>'));
 console.log('prepared .src');

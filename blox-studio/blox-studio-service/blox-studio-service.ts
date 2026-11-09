@@ -3,7 +3,7 @@ import { ProjectRepository, type Project } from './project-repository.js';
 import { RobloxPublisher } from './roblox-publisher.js';
 
 /**
- * Blox Studio service: project storage, .rbxlx export and Roblox publishing.
+ * VoxMesa service: project storage, .rbxlx export and Roblox publishing.
  */
 export class BloxStudioService {
   constructor(

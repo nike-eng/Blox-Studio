@@ -24,7 +24,7 @@ export type ProjectSummary = {
 export type Project = ProjectSummary & { instances: PlaceInstance[] };
 
 /**
- * Base URL of the Blox Studio service behind the platform gateway.
+ * Base URL of the VoxMesa service behind the platform gateway.
  * @returns base url
  */
 export function serviceUrl(): string {
@@ -88,7 +88,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       headers: { 'Content-Type': 'application/json', 'x-owner-key': ownerKey(), ...(init.headers || {}) },
     });
   } catch {
-    throw new ApiError(abort.signal.aborted ? 'The server took too long to answer.' : 'Could not reach the Blox Studio server. Check your internet connection.', 0);
+    throw new ApiError(abort.signal.aborted ? 'The server took too long to answer.' : 'Could not reach the VoxMesa server. Check your internet connection.', 0);
   } finally {
     clearTimeout(timer);
   }
@@ -96,14 +96,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let json: { message?: string } = {};
   try { json = text ? JSON.parse(text) : {}; } catch {
     // Not JSON: the page itself (no server connected) or a "waking up" page from the host.
-    throw new ApiError('The Blox Studio server is not answering yet. It may be waking up, so try again in a minute.', res.status >= 500 ? res.status : 503);
+    throw new ApiError('The VoxMesa server is not answering yet. It may be waking up, so try again in a minute.', res.status >= 500 ? res.status : 503);
   }
   if (!res.ok) throw new ApiError(json.message || `Request failed (${res.status})`, res.status);
   return json as T;
 }
 
 /**
- * Client for the Blox Studio service REST API.
+ * Client for the VoxMesa service REST API.
  */
 export const studioApi = {
   /** Lists projects. */

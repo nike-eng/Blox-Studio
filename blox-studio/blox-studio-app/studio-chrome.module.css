@@ -20,7 +20,7 @@
   height: 56px; padding: 0 0.75rem; background: var(--ink); border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 0.45rem; color: var(--text); text-decoration: none; font-weight: 700; padding: 0 0.25rem; min-height: 44px; }
-.logo { color: var(--accent); font-size: 1.1rem; }
+.logo { display: inline-flex; align-items: center; line-height: 0; }
 .projectName { color: var(--soft); max-width: 22vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 0.6rem; border-left: 1px solid var(--line); }
 .saveBtn { display: inline-flex; align-items: center; gap: 0.4rem; position: relative; min-height: 40px; padding: 0 0.85rem; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--soft); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .saveBtn[data-state='unsaved'] { background: #2f9bff; border-color: #2f9bff; color: #fff; box-shadow: 0 2px 12px rgba(47, 155, 255, 0.35); }

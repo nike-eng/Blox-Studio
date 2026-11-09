@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './landing-page.module.css';
+import { BrandMark } from './brand-mark.js';
 
 const N = 6; // baseplate is N x N studs
 const CW = 64; // width of one ground diamond
@@ -125,17 +126,17 @@ function BrickLink({ to, children }: { to: string; children: string }) {
 }
 
 /**
- * Landing page: what Blox Studio is, and one big way in.
+ * Landing page: what VoxMesa is, and one big way in.
  */
 export function LandingPage() {
   return (
     <div className={styles.page}>
       <header className={styles.nav}>
-        <Link to="/" className={styles.logo} aria-label="Blox Studio home">
-          <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="2" y="11" width="26" height="15" rx="3" fill="#ff6a3d" /><rect x="6" y="5" width="6" height="7" rx="2" fill="#ff9d7c" /><rect x="18" y="5" width="6" height="7" rx="2" fill="#ff9d7c" /></svg>
-          Blox Studio
+        <Link to="/" className={styles.logo} aria-label="VoxMesa home">
+          <BrandMark size={32} />
+          VoxMesa
         </Link>
-        <Link to="/projects" className={styles.navLink}>Open Studio</Link>
+        <Link to="/projects" className={styles.navLink}>Open editor</Link>
       </header>
 
       <main>
@@ -143,9 +144,9 @@ export function LandingPage() {
           <div className={styles.copy}>
             <p className={styles.eyebrow}>Free · Runs in your browser · Nothing to install</p>
             <h1>Build 3D games with your thumbs.</h1>
-            <p className={styles.lede}>Drag blocks into place, write scripts, and press Play. Blox Studio is a game editor that works on the iPad, phone or laptop you already have.</p>
+            <p className={styles.lede}>Drag blocks into place, write scripts, and press Play. VoxMesa is a game editor that works on the iPad, phone, Chromebook or laptop you already have.</p>
             <div className={styles.actions}>
-              <BrickLink to="/projects">Open Blox Studio</BrickLink>
+              <BrickLink to="/projects">Open VoxMesa</BrickLink>
               <a className={styles.textLink} href="#inside">See what is inside</a>
             </div>
           </div>
@@ -161,23 +162,23 @@ export function LandingPage() {
             </article>
             <article>
               <h3>Real scripting</h3>
-              <p>Write Script, LocalScript and ModuleScript files in Luau, and run them from the Output window.</p>
+              <p>Write Script, LocalScript and ModuleScript files in Lua, and run them from the Output window.</p>
             </article>
             <article>
               <h3>Yours to publish</h3>
-              <p>Save a place file for Roblox Studio, or publish straight to your own experience with your own key.</p>
+              <p>Export a place file (.rbxlx) that opens in Roblox Studio, or publish it to your own Roblox experience with your own key.</p>
             </article>
           </div>
         </section>
 
         <section className={styles.cta} aria-labelledby="cta-title">
           <h2 id="cta-title">Your first game is one tap away.</h2>
-          <BrickLink to="/projects">Open Blox Studio</BrickLink>
+          <BrickLink to="/projects">Open VoxMesa</BrickLink>
         </section>
       </main>
 
       <footer className={styles.footer}>
-        <p>Blox Studio is an independent project. It is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox is a trademark of Roblox Corporation.</p>
+        <p>VoxMesa is an independent project. It is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox and Roblox Studio are trademarks of Roblox Corporation, named here only to describe file compatibility.</p>
       </footer>
     </div>
   );

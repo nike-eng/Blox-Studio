@@ -238,7 +238,7 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
       {finished && !menu && (
         <div className={styles.finishCard}>
           <div className={styles.trophy}>🏆</div>
-          <h2>Obby complete!</h2>
+          <h2>Course complete!</h2>
           <p>{elapsed.toFixed(2)}s · {s.deaths} {s.deaths === 1 ? 'death' : 'deaths'}</p>
           <div className={styles.finishActions}>
             <button className={styles.primaryBtn} onClick={restart}>Play again</button>

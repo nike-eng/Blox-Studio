@@ -40,7 +40,7 @@ export function run() {
   const ownerOf = (res: express.Response) => res.locals.ownerHash as string;
   const requireOwner: express.RequestHandler = (req, res, next) => {
     const key = String(req.headers['x-owner-key'] || req.query.key || '');
-    if (key.length < 32) { res.status(401).json({ message: 'Open Blox Studio in the browser to use your projects.' }); return; }
+    if (key.length < 32) { res.status(401).json({ message: 'Open VoxMesa in the browser to use your projects.' }); return; }
     res.locals.ownerHash = createHash('sha256').update(key).digest('hex');
     next();
   };
@@ -63,7 +63,7 @@ export function run() {
     } catch (err) { next(err); }
   });
 
-  app.get('/', (_req, res) => { res.json({ message: 'Blox Studio service' }); });
+  app.get('/', (_req, res) => { res.json({ message: 'VoxMesa service' }); });
 
   app.get('/roblox/status', (_req, res) => {
     res.json({ configured: service.publisher.configured });
@@ -148,7 +148,7 @@ export function run() {
     try {
       const token = String(req.params.token);
       const ownerHash = await service.projects.ownerForMcpToken(token);
-      if (!ownerHash) { res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'This AI link is not valid. Make a new one in Blox Studio (Game settings → Connect an AI).' } }); return; }
+      if (!ownerHash) { res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'This AI link is not valid. Make a new one in VoxMesa (Game settings → Connect an AI).' } }); return; }
       if (limited(`mcp:${token}`, 120)) { res.status(429).json({ jsonrpc: '2.0', id: null, error: { code: -32002, message: 'Too many requests. Wait a minute.' } }); return; }
       res.setHeader('Cache-Control', 'no-store');
       const store = storeFor(ownerHash);
@@ -166,7 +166,7 @@ export function run() {
       console.error('mcp error', (err as Error).message);
     }
   });
-  app.get('/mcp/:token', (_req, res) => { res.status(405).set('Allow', 'POST').json({ message: 'This is a Blox Studio AI link. Add it as a custom connector in your AI app.' }); });
+  app.get('/mcp/:token', (_req, res) => { res.status(405).set('Allow', 'POST').json({ message: 'This is a VoxMesa AI link. Add it as a custom connector in your AI app.' }); });
 
   const server = app.listen(port, () => {
     console.log(`🚀  Server ready at: http://localhost:${port}`);

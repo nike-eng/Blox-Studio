@@ -63,17 +63,17 @@ const partProps = {
 
 /** Tool definitions shown to the AI. */
 export const MCP_TOOLS = [
-  { name: 'list_projects', description: 'List the places (projects) in this Blox Studio account.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'list_projects', description: 'List the places (projects) in this VoxMesa account.', inputSchema: { type: 'object', properties: {} } },
   { name: 'create_project', description: 'Create a new place.', inputSchema: { type: 'object', properties: { name: { type: 'string' }, template: { type: 'string', enum: TEMPLATES } }, required: ['name'] } },
   { name: 'get_place', description: 'Look inside a place: lists instances (id, name, class, position, size, color). Use className or nameContains to filter. Services are Workspace, Lighting, ReplicatedStorage, ServerScriptService, StarterGui.', inputSchema: { type: 'object', properties: { projectId, className: { type: 'string' }, nameContains: { type: 'string' }, limit: { type: 'number', description: 'Max rows, default 100' } }, required: ['projectId'] } },
   { name: 'run_luau', description: 'Run a Luau script that edits the place (a subset: variables, loops, functions, tables, Vector3, Color3, Instance.new, workspace, game:GetService, print). print() output is returned. Changes are saved. Example: for i=1,5 do local p=Instance.new("Part") p.Position=Vector3.new(i*6,3,0) p.Parent=workspace end', inputSchema: { type: 'object', properties: { projectId, source: { type: 'string' } }, required: ['projectId', 'source'] } },
   { name: 'add_part', description: 'Add one part (Block, Ball, Cylinder, Wedge, CornerWedge) to the Workspace or another parent.', inputSchema: { type: 'object', properties: { projectId, parentId: { type: 'string', description: 'Parent id, default Workspace' }, ...partProps }, required: ['projectId'] } },
   { name: 'update_instance', description: 'Change properties of an existing instance (name, position, size, rotation, color, material, transparency, anchored, canCollide, shape, or a script\'s source).', inputSchema: { type: 'object', properties: { projectId, id: { type: 'string' }, ...partProps, source: { type: 'string' } }, required: ['projectId', 'id'] } },
   { name: 'delete_instances', description: 'Delete instances (and everything inside them). Services cannot be deleted.', inputSchema: { type: 'object', properties: { projectId, ids: { type: 'array', items: { type: 'string' } } }, required: ['projectId', 'ids'] } },
-  { name: 'get_publish_info', description: 'Show whether a place is ready for Roblox and its publish history. Publishing itself must be done by the owner with the Publish button in Blox Studio.', inputSchema: { type: 'object', properties: { projectId }, required: ['projectId'] } },
+  { name: 'get_publish_info', description: 'Show whether a place is ready for Roblox and its publish history. Publishing itself must be done by the owner with the Publish button in VoxMesa.', inputSchema: { type: 'object', properties: { projectId }, required: ['projectId'] } },
 ];
 
-const INSTRUCTIONS = 'Blox Studio is a Roblox place editor. Use get_place to look first, then add_part / update_instance / run_luau to build. Y is up; 1 stud is about 0.28 m. The owner sees your edits appear in their editor within a few seconds and can undo them. You cannot publish to Roblox; ask the owner to tap Publish.';
+const INSTRUCTIONS = 'VoxMesa is a 3D place editor whose places can be exported as Roblox place files. Use get_place to look first, then add_part / update_instance / run_luau to build. Y is up; 1 stud is about 0.28 m. The owner sees your edits appear in their editor within a few seconds and can undo them. You cannot publish to Roblox; ask the owner to tap Publish.';
 
 /**
  * Runs one MCP tool for one owner.

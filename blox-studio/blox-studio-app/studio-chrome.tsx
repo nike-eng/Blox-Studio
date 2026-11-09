@@ -4,6 +4,7 @@ import type { ClassName, InstanceProps } from '@nikethbhat4thh/blox-studio.rbxlx
 import type { PlaceEditor, Tool } from './use-place-editor.js';
 import { Icon, type IconName } from './icons.js';
 import s from './studio-chrome.module.css';
+import { BrandMark } from './brand-mark.js';
 
 /**
  * One thing the Add menu can put into the place.
@@ -29,7 +30,7 @@ export const SHAPES: InsertItem[] = [
   { id: 'spawn', label: 'Spawn', hint: 'Where players start', icon: 'spawn', className: 'SpawnLocation' },
 ];
 
-/** Obby pieces that already have gameplay built in. */
+/** Course pieces that already have gameplay built in. */
 export const OBBY: InsertItem[] = [
   { id: 'kill', label: 'Lava brick', hint: 'Touch it and you reset', icon: 'kill', className: 'Part', name: 'KillBrick', props: { size: [8, 1, 8], color: '#ff1f1f', material: 'Neon', behavior: 'kill' } },
   { id: 'checkpoint', label: 'Checkpoint', hint: 'Saves your progress', icon: 'checkpoint', className: 'Part', name: 'Checkpoint', props: { size: [12, 1, 12], color: '#22c55e', material: 'SmoothPlastic', behavior: 'checkpoint' } },
@@ -107,8 +108,8 @@ export function TopBar({ projectName, saveState, onSave, confirmLeave, saveSlow,
   return (
     <header className={s.top} role="toolbar" aria-label="Studio">
       <Link to="/projects" className={s.brand} title="Back to your places" onClick={(e) => { if (confirmLeave && !confirmLeave()) e.preventDefault(); }}>
-        <span className={s.logo}>◆</span>
-        <span className={s.brandText}>Blox Studio</span>
+        <span className={s.logo}><BrandMark size={24} /></span>
+        <span className={s.brandText}>VoxMesa</span>
       </Link>
       <span className={s.projectName} title={projectName}>{projectName}</span>
       <SaveButton state={saveState} slow={saveSlow} onSave={onSave} />
@@ -240,7 +241,7 @@ export function AddMenu({ open, onToggle, onPick }: AddMenuProps) {
         <div className={s.sheet} ref={sheet} tabIndex={-1} role="dialog" aria-label="Add to your place">
           <h3 className={s.sheetTitle}>Shapes</h3>
           <div className={s.grid}>{SHAPES.map(tile)}</div>
-          <h3 className={s.sheetTitle}>Obby pieces</h3>
+          <h3 className={s.sheetTitle}>Course pieces</h3>
           <div className={s.grid}>{OBBY.map(tile)}</div>
           <h3 className={s.sheetTitle}>Scripts &amp; more</h3>
           <div className={s.grid}>{MORE.map(tile)}</div>

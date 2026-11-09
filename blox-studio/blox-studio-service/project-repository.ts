@@ -15,7 +15,7 @@ export type PublishRecord = {
 };
 
 /**
- * A Blox Studio project (one Roblox place).
+ * A VoxMesa project (one Roblox place).
  */
 export type Project = {
   id: string;
@@ -63,7 +63,7 @@ const McpLinkModel: mongoose.Model<any> = mongoose.models.McpLink || mongoose.mo
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 
 /**
- * Data access for Blox Studio projects, backed by MongoDB.
+ * Data access for VoxMesa projects, backed by MongoDB.
  */
 export class ProjectRepository {
   /**
@@ -75,7 +75,7 @@ export class ProjectRepository {
     }
     const count = await ProjectModel.countDocuments();
     if (count === 0) {
-      await this.create('My First Obby', 'obby');
+      await this.create('My First Course', 'obby');
     }
   }
 

@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { studioApi, type ProjectSummary } from './studio-api.js';
+import { BrandMark } from './brand-mark.js';
 import styles from './home.module.css';
 
 const TEMPLATES: { id: PlaceTemplate; name: string; desc: string; preview: string }[] = [
-  { id: 'baseplate', name: 'Baseplate', desc: 'A flat grey baseplate with a spawn.', preview: 'linear-gradient(160deg,#87c5ff 0 55%,#5b5d69 55%)' },
-  { id: 'obby', name: 'Sky Islands Obby', desc: '5 stages: lava, moving platforms, spinner, jump pad, truss tower — with checkpoints & timer.', preview: 'linear-gradient(160deg,#87c5ff 0 45%,#ff5a5f 45% 55%,#ffb400 55% 65%,#00c2a8 65% 75%,#5b5d69 75%)' },
+  { id: 'baseplate', name: 'Flat ground', desc: 'A flat grey floor with a spawn point.', preview: 'linear-gradient(160deg,#87c5ff 0 55%,#5b5d69 55%)' },
+  { id: 'obby', name: 'Sky Islands Course', desc: '5 stages: lava, moving platforms, spinner, jump pad, truss tower — with checkpoints & timer.', preview: 'linear-gradient(160deg,#87c5ff 0 45%,#ff5a5f 45% 55%,#ffb400 55% 65%,#00c2a8 65% 75%,#5b5d69 75%)' },
   { id: 'empty', name: 'Empty', desc: 'Just the services. Build from scratch.', preview: 'linear-gradient(160deg,#1b1f2a,#2a3040)' },
 ];
 
@@ -22,10 +23,10 @@ export function ProjectsPage() {
   const load = () => studioApi.listProjects().then(setProjects).catch((e) => setError(e.message));
   useEffect(() => { load(); }, []);
 
-  const create = async (template: PlaceTemplate) => {
+  const create = async (template: PlaceTemplate, label: string) => {
     try {
       setError('');
-      const project = await studioApi.createProject(name.trim() || `My ${template} place`, template);
+      const project = await studioApi.createProject(name.trim() || `My ${label.toLowerCase()} place`, template);
       navigate(`/studio/${project.id}`);
     } catch (e) {
       setError((e as Error).message);
@@ -35,19 +36,19 @@ export function ProjectsPage() {
   return (
     <div className={styles.home}>
       <header className={styles.top}>
-        <Link to="/" className={styles.brand}><span className={styles.logo}>◆</span> Blox Studio</Link>
+        <Link to="/" className={styles.brand}><span className={styles.logo}><BrandMark size={26} /></span> VoxMesa</Link>
         <a className={styles.docsLink} href="https://create.roblox.com/docs/cloud/open-cloud/usage-place-publishing" target="_blank" rel="noreferrer">How publishing works ↗</a>
       </header>
       <section className={styles.hero}>
-        <h1>Build Roblox experiences in your browser.</h1>
-        <p>Place parts, script in Luau, and publish straight to your Roblox experience — no install needed.</p>
+        <h1>Build 3D games in your browser.</h1>
+        <p>Place parts, write Lua scripts and press Play. When you are ready, export a place file or publish it to your own experience. No install needed.</p>
         <input className={styles.nameInput} placeholder="Name your new place" value={name} onChange={(e) => setName(e.target.value)} />
       </section>
       <section>
         <h2 className={styles.sectionTitle}>New place</h2>
         <div className={styles.grid}>
           {TEMPLATES.map((t) => (
-            <button type="button" key={t.id} className={styles.card} onClick={() => create(t.id)}>
+            <button type="button" key={t.id} className={styles.card} onClick={() => create(t.id, t.name)}>
               <div className={styles.preview} style={{ background: t.preview }} />
               <div className={styles.cardBody}><strong>{t.name}</strong><span>{t.desc}</span></div>
             </button>
@@ -81,7 +82,7 @@ export function ProjectsPage() {
           ))}
         </div>
       </section>
-      <p className={styles.disclaimer}>Blox Studio is an independent project and is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox is a trademark of Roblox Corporation.</p>
+      <p className={styles.disclaimer}>VoxMesa is an independent project. It is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox and Roblox Studio are trademarks of Roblox Corporation, named here only to describe file compatibility.</p>
     </div>
   );
 }
