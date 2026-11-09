@@ -26,7 +26,7 @@ const KEYS: Record<string, keyof PlayInput | 'left' | 'right' | 'fwd' | 'back'> 
 };
 
 const QUALITY_KEY = 'blox-studio:graphics-quality';
-const DPR: Record<GraphicsQuality, number> = { low: 0.75, medium: 1, high: 1.5 };
+const DPR: Record<GraphicsQuality, number> = { low: 0.85, medium: 1.25, high: 1.75 };
 
 /** Writes the measured FPS into a ref twice per second (no React renders). */
 function FpsProbe({ fps }: { fps: MutableRefObject<number> }) {
@@ -68,7 +68,7 @@ const PlaytestScene = memo(function PlaytestScene({ instances, input, session, o
     <Canvas
       shadows={quality !== 'low'}
       dpr={Math.min(DPR[quality], typeof window !== 'undefined' ? window.devicePixelRatio : 1)}
-      gl={{ antialias: quality !== 'low', powerPreference: 'high-performance' }}
+      gl={{ antialias: quality !== 'low', powerPreference: 'high-performance', toneMapping: THREE.NeutralToneMapping }}
       camera={{ fov: 70, near: 0.5, far: 3000 }}
       className={styles.canvas}
       onContextMenu={(e) => e.preventDefault()}
@@ -85,7 +85,7 @@ const PlaytestScene = memo(function PlaytestScene({ instances, input, session, o
 });
 
 /** Stage/timer card and Roblox-style leaderboard; owns the 10 Hz timer so only it re-renders. */
-function Hud({ session, playerName, version, fps }: { session: MutableRefObject<PlaySession>; playerName: string; version: number; fps: MutableRefObject<number> }) {
+function Hud({ session, playerName, version, fps, showFps }: { session: MutableRefObject<PlaySession>; playerName: string; version: number; fps: MutableRefObject<number>; showFps: boolean }) {
   const [, tick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => tick((n) => n + 1), 100);
@@ -103,7 +103,7 @@ function Hud({ session, playerName, version, fps }: { session: MutableRefObject<
       <div className={styles.leaderboard}>
         <div className={styles.lbHead}><span>Players</span><span>Stage</span></div>
         <div className={styles.lbRow}><span className={styles.lbName}>{playerName}</span><span>{s.stage}</span></div>
-        <div className={styles.fps}>{fps.current} FPS</div>
+        {showFps && <div className={styles.fps}>{fps.current} FPS</div>}
       </div>
     </>
   );
@@ -123,24 +123,47 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
   const [runKey, setRunKey] = useState(0);
   const [help, setHelp] = useState(true);
   const [menu, setMenu] = useState(false);
-  const [quality, setQuality] = useState<GraphicsQuality>(() => {
-    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(QUALITY_KEY) : null;
-    return saved === 'low' || saved === 'medium' || saved === 'high' ? saved : 'medium';
-  });
+  const savedQuality = typeof localStorage !== 'undefined' ? localStorage.getItem(QUALITY_KEY) : null;
+  const [quality, setQuality] = useState<GraphicsQuality>(() => (savedQuality === 'low' || savedQuality === 'medium' || savedQuality === 'high' ? savedQuality : 'medium'));
+  const qualityRef = useRef(quality);
+  qualityRef.current = quality;
+  /** Automatic graphics only runs until you pick a level yourself. */
+  const autoRef = useRef(!(savedQuality === 'low' || savedQuality === 'medium' || savedQuality === 'high'));
+  const [limited, setLimited] = useState(false);
+  const [showFps, setShowFps] = useState(true);
 
   const changeQuality = (q: GraphicsQuality) => {
+    autoRef.current = false;
+    setLimited(false);
     setQuality(q);
     try { localStorage.setItem(QUALITY_KEY, q); } catch { /* storage unavailable */ }
   };
 
-  // Auto-adjust like Roblox's "Automatic" graphics: step down when FPS stays under 40 for ~3s.
+  // Automatic graphics: if the frame rate stays under 40 for ~3s, try the next level down.
+  // Then check that it really helped. If it did not (for example iPad Low Power Mode caps the game at 30 fps
+  // whatever you do), go back to the nicer level and tell the player, instead of making the game ugly for nothing.
   useEffect(() => {
     let slow = 0;
+    let probe: { prev: GraphicsQuality; before: number; ticks: number } | null = null;
     const id = setInterval(() => {
-      slow = fps.current < 40 ? slow + 1 : 0;
+      if (!autoRef.current) return;
+      const f = fps.current;
+      if (probe) {
+        probe.ticks += 1;
+        if (probe.ticks >= 6) {
+          if (f < probe.before * 1.25 && f < 40) { setQuality(probe.prev); setLimited(true); autoRef.current = false; }
+          probe = null; slow = 0;
+        }
+        return;
+      }
+      slow = f < 40 ? slow + 1 : 0;
       if (slow >= 6) {
         slow = 0;
-        setQuality((q) => (q === 'high' ? 'medium' : q === 'medium' ? 'low' : q));
+        const q = qualityRef.current;
+        const next: GraphicsQuality = q === 'high' ? 'medium' : q === 'medium' ? 'low' : 'low';
+        if (next === q) { setLimited(true); autoRef.current = false; return; }
+        probe = { prev: q, before: f, ticks: 0 };
+        setQuality(next);
       }
     }, 500);
     return () => clearInterval(id);
@@ -201,13 +224,13 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
       <PlaytestScene key={runKey} instances={instances} input={input} session={session} onEvent={onEvent} quality={quality} fps={fps} />
 
       <div className={styles.topLeft}>
-        <button className={styles.robloxMenuBtn} onClick={() => setMenu((m) => !m)} aria-label="Menu (Esc)" title="Menu (Esc)">
-          <span className={styles.robloxLogo} />
+        <button className={styles.menuBtn} onClick={() => setMenu((m) => !m)} aria-label="Menu (Esc)" title="Menu (Esc)">
+          <span className={styles.menuIcon} aria-hidden="true"><i /><i /><i /></span>
         </button>
         <button className={styles.stopBtn} onClick={onStop} title="Stop playtest"><span className={styles.stopIcon} /> Stop</button>
       </div>
 
-      <Hud session={session} playerName={playerName} version={version} fps={fps} />
+      <Hud session={session} playerName={playerName} version={version} fps={fps} showFps={showFps} />
 
       {banner && (
         <div key={banner.key} className={`${styles.banner} ${styles[banner.tone]}`}>{banner.text}</div>
@@ -236,6 +259,19 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
                 ))}
               </div>
             </div>
+            <div className={styles.menuSection}>
+              <span>Show frame rate</span>
+              <div className={styles.segmented}>
+                <button data-active={showFps} onClick={() => setShowFps(true)}>On</button>
+                <button data-active={!showFps} onClick={() => setShowFps(false)}>Off</button>
+              </div>
+            </div>
+            {limited && (
+              <p className={styles.menuNote}>
+                Lower graphics did not make this faster, so your device is probably limiting the frame rate (about {fps.current} fps).
+                On an iPad or phone, turn off <b>Low Power Mode</b> in Settings → Battery, then play again.
+              </p>
+            )}
             <div className={styles.menuButtons}>
               <button className={styles.primaryBtn} onClick={() => setMenu(false)}>Resume</button>
               <button className={styles.ghostBtn} onClick={() => { input.current.reset = true; setMenu(false); }}>Reset character</button>

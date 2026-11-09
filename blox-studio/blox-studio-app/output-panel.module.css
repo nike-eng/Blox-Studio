@@ -1,7 +1,7 @@
 /* Output window + Command Bar (docked under the viewport). */
 .panel {
   --ink: #1c1e24; --panel: #262932; --line: #343844; --text: #eceef3; --soft: #9aa1b2; --accent: #2f9bff; --danger: #ff6b6b; --warn: #f0c24d;
-  flex-shrink: 0; display: flex; flex-direction: column; height: min(34vh, 280px); min-height: 150px;
+  flex-shrink: 0; display: flex; flex-direction: column; height: min(calc(var(--app-h, 100vh) * 0.34), 280px); min-height: 150px;
   background: var(--ink); border-top: 1px solid var(--line); color: var(--text); font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
 }
 .head { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.6rem; min-height: 42px; background: var(--panel); border-bottom: 1px solid var(--line); font-size: 0.85rem; flex-wrap: nowrap; overflow-x: auto; }
@@ -29,4 +29,4 @@
 .run { min-height: 44px; padding: 0 1.1rem; border: none; border-radius: 10px; background: var(--accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .run:disabled { opacity: 0.4; cursor: default; }
 .panel button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-@media (max-width: 767px) { .panel { height: min(42vh, 300px); } .input::placeholder { font-size: 12px; } }
+@media (max-width: 767px) { .panel { height: min(calc(var(--app-h, 100vh) * 0.42), 300px); } .input::placeholder { font-size: 12px; } }

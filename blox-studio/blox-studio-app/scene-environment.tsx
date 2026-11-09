@@ -40,8 +40,8 @@ export type SceneEnvironmentProps = {
 
 const MAX_POINT_LIGHTS = 4;
 
-function Sun({ offset, focus, follow, intensity, color, shadows }: {
-  offset: Vec3; focus: Vec3; follow?: MutableRefObject<THREE.Vector3>; intensity: number; color: string; shadows: boolean;
+function Sun({ offset, focus, follow, intensity, color, shadows, shadowSize }: {
+  offset: Vec3; focus: Vec3; follow?: MutableRefObject<THREE.Vector3>; intensity: number; color: string; shadows: boolean; shadowSize: number;
 }) {
   const light = useRef<THREE.DirectionalLight>(null);
   useEffect(() => {
@@ -66,7 +66,7 @@ function Sun({ offset, focus, follow, intensity, color, shadows }: {
       intensity={intensity}
       color={color}
       castShadow={shadows}
-      shadow-mapSize={[1024, 1024]}
+      shadow-mapSize={[shadowSize, shadowSize]}
       shadow-bias={-0.0005}
       shadow-normalBias={0.05}
       shadow-camera-left={-70}
@@ -107,6 +107,7 @@ export function SceneEnvironment({ lighting, focus = [0, 0, 0], follow, pointLig
         intensity={night ? 0.15 : (p.brightness ?? 3) * 0.7}
         color={clock < 8 || clock > 17 ? '#ffc58a' : '#fff6e6'}
         shadows={quality !== 'low'}
+        shadowSize={quality === 'high' ? 2048 : 1024}
       />
       {lights.map((l) => (
         <pointLight key={l.id} position={l.position} color={l.color} intensity={(l.brightness ?? 1) * 30} distance={(l.range ?? 16) * 1.5} decay={1.6} />

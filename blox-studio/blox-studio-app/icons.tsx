@@ -7,7 +7,7 @@ export type IconName =
   | 'kill' | 'checkpoint' | 'mover' | 'spinner' | 'jumppad' | 'fade' | 'finish'
   | 'script' | 'localscript' | 'module' | 'light' | 'folder' | 'model'
   | 'undo' | 'redo' | 'copy' | 'paste' | 'duplicate' | 'group' | 'trash' | 'focus'
-  | 'cut' | 'anchor' | 'play' | 'settings' | 'download' | 'publish' | 'plus' | 'check' | 'close' | 'more' | 'terminal';
+  | 'cut' | 'anchor' | 'play' | 'settings' | 'download' | 'publish' | 'plus' | 'check' | 'close' | 'more' | 'terminal' | 'save';
 
 const PATHS: Record<IconName, ReactNode> = {
   select: <path d="M5 3l14 7.5-6.2 1.9L10.5 19z" />,
@@ -52,6 +52,7 @@ const PATHS: Record<IconName, ReactNode> = {
   check: <path d="M5 13l4 4L19 7" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   terminal: <><path d="M4 5h16v14H4z" /><path d="M7.5 10l3 2.5-3 2.5M13 15h4" /></>,
+  save: <><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4M8 20v-6h8v6" /></>,
   more: <><circle cx="5" cy="12" r="1.4" fill="currentColor" /><circle cx="12" cy="12" r="1.4" fill="currentColor" /><circle cx="19" cy="12" r="1.4" fill="currentColor" /></>,
 };
 

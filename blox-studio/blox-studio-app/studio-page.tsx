@@ -1,25 +1,48 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { SCRIPT_CLASSES, runStudioScript, type Interpreter, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
-import { studioApi, type Project } from './studio-api.js';
+import { studioApi, ApiError, type Project } from './studio-api.js';
 import { usePlaceEditor } from './use-place-editor.js';
 import { Viewport } from './viewport.js';
 import { ExplorerPanel } from './explorer-panel.js';
 import { PropertiesPanel } from './properties-panel.js';
 import { ScriptEditor } from './script-editor.js';
-import { TopBar, ToolRail, AddMenu, SelectionBar, SNAPS, type SnapLevel, type InsertItem } from './studio-chrome.js';
+import { TopBar, ToolRail, AddMenu, SelectionBar, SNAPS, type SnapLevel, type InsertItem, type SaveState } from './studio-chrome.js';
 import chrome from './studio-chrome.module.css';
 import { OutputPanel } from './output-panel.js';
 import { PublishDialog } from './publish-dialog.js';
 import { Playtest } from './playtest.js';
 import styles from './studio.module.css';
 
+/** Unsaved work is kept on this device (never sent anywhere) so a closed tab or a failed save cannot lose it. */
+type Draft = { at: number; base: string; instances: PlaceInstance[] };
+const draftKey = (id: string) => `blox-studio-draft:${id}`;
+function readDraft(id: string): Draft | null {
+  try { const raw = localStorage.getItem(draftKey(id)); return raw ? (JSON.parse(raw) as Draft) : null; } catch { return null; }
+}
+function writeDraft(id: string, draft: Draft) {
+  try { localStorage.setItem(draftKey(id), JSON.stringify(draft)); } catch { /* storage full or blocked */ }
+}
+function clearDraft(id: string) {
+  try { localStorage.removeItem(draftKey(id)); } catch { /* storage blocked */ }
+}
+
 function Editor({ project, setProject }: { project: Project; setProject: (p: Project) => void }) {
-  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [saveState, setSaveState] = useState<SaveState>('saved');
+  const [saveSlow, setSaveSlow] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const saveStateRef = useRef(saveState);
   saveStateRef.current = saveState;
-  const pending = useRef<PlaceInstance[] | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const saveErrorRef = useRef('');
+  /** The version the server has. The place is "unsaved" whenever the editor holds a different one. */
+  const savedRef = useRef<PlaceInstance[]>(project.instances);
+  const latest = useRef<PlaceInstance[]>(project.instances);
+  const inflight = useRef<Promise<boolean> | null>(null);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [draftOffer, setDraftOffer] = useState<Draft | null>(() => {
+    const d = readDraft(project.id);
+    return d && Array.isArray(d.instances) && JSON.stringify(d.instances) !== JSON.stringify(project.instances) ? d : null;
+  });
   const insertPointRef = useRef<() => Vec3>(() => [0, 5, 0]);
   const focusRef = useRef<(pos: Vec3) => void>(() => undefined);
   const [addOpen, setAddOpen] = useState(false);
@@ -39,41 +62,73 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
   const lastSeen = useRef(project.updatedAt);
   const applyingRemote = useRef(false);
 
-  const flush = useCallback(async () => {
-    clearTimeout(timer.current);
-    const instances = pending.current;
-    if (!instances) return;
-    pending.current = null;
-    setSaveState('saving');
-    try {
-      const saved = await studioApi.updateProject(project.id, { instances });
-      if (saved?.updatedAt) lastSeen.current = saved.updatedAt;
-      setSaveState('saved');
-    } catch {
-      setSaveState('error');
-    }
+  /**
+   * Saves the place to the server. Only runs when you ask (Save button or Ctrl+S) or when Export / Publish need the saved copy.
+   * If it fails your changes stay in the editor and on this device, and nothing is thrown away.
+   */
+  const save = useCallback(async (): Promise<boolean> => {
+    if (inflight.current) await inflight.current.catch(() => false);
+    const instances = latest.current;
+    if (instances === savedRef.current) { setSaveState('saved'); return true; }
+    const run = (async () => {
+      setSaveState('saving'); setSaveError(''); saveErrorRef.current = '';
+      const slow = setTimeout(() => setSaveSlow(true), 2500);
+      let failure: unknown;
+      try {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          try {
+            const saved = await studioApi.updateProject(project.id, { instances });
+            if (saved?.updatedAt) lastSeen.current = saved.updatedAt;
+            savedRef.current = instances;
+            clearTimeout(draftTimer.current);
+            if (latest.current === instances) { clearDraft(project.id); setSaveState('saved'); }
+            else { writeDraft(project.id, { at: Date.now(), base: lastSeen.current, instances: latest.current }); setSaveState('unsaved'); }
+            return true;
+          } catch (err) {
+            failure = err;
+            if (!(err instanceof ApiError && err.temporary) || attempt === 2) break;
+            await new Promise((r) => setTimeout(r, attempt === 0 ? 2500 : 6000)); // the free server may still be waking up
+          }
+        }
+        const msg = failure instanceof Error ? failure.message : 'Saving failed.';
+        saveErrorRef.current = msg; setSaveError(msg); setSaveState('error');
+        return false;
+      } finally {
+        clearTimeout(slow); setSaveSlow(false);
+      }
+    })();
+    inflight.current = run;
+    try { return await run; } finally { inflight.current = null; }
   }, [project.id]);
 
+  /** Save first, or explain why not. Used before Export and Publish, which work from the saved copy. */
+  const saveOrThrow = useCallback(async () => {
+    if (!(await save())) throw new Error(`Your place could not be saved first. ${saveErrorRef.current}`.trim());
+  }, [save]);
+
   const onChange = useCallback((instances: PlaceInstance[]) => {
-    if (applyingRemote.current) { applyingRemote.current = false; return; } // came from the server, nothing to save
-    pending.current = instances;
-    setSaveState('saving');
-    clearTimeout(timer.current);
-    timer.current = setTimeout(flush, 800);
-  }, [flush]);
+    if (applyingRemote.current) { applyingRemote.current = false; savedRef.current = instances; return; } // came from the server, nothing to save
+    if (instances === savedRef.current) { // undone back to the saved version
+      clearTimeout(draftTimer.current); clearDraft(project.id);
+      setSaveState((st) => (st === 'saving' ? st : 'saved'));
+      return;
+    }
+    setSaveState((st) => (st === 'saving' ? st : 'unsaved'));
+    clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(() => writeDraft(project.id, { at: Date.now(), base: lastSeen.current, instances }), 500);
+  }, [project.id]);
 
   const editor = usePlaceEditor(project.instances, onChange);
-  const latest = useRef(editor.instances);
   latest.current = editor.instances;
 
   // Pick up edits made elsewhere (for example by a connected AI). Only when nothing of yours is waiting to be saved,
   // and it lands as one undo step so you can take it back.
   useEffect(() => {
     const id = setInterval(async () => {
-      if (document.visibilityState !== 'visible' || pending.current || saveStateRef.current !== 'saved') return;
+      if (document.visibilityState !== 'visible' || latest.current !== savedRef.current || saveStateRef.current !== 'saved') return;
       try {
         const remote = await studioApi.getProject(project.id);
-        if (remote.updatedAt === lastSeen.current || pending.current) return;
+        if (remote.updatedAt === lastSeen.current || latest.current !== savedRef.current) return;
         lastSeen.current = remote.updatedAt;
         if (JSON.stringify(remote.instances) !== JSON.stringify(latest.current)) {
           applyingRemote.current = true;
@@ -107,21 +162,36 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     }
   }, [log, editor]);
 
-  useEffect(() => () => { flush(); }, [flush]);
-
-  // Safari on iPad can close the tab without unmounting, so save as soon as the page is hidden.
+  // Nothing is sent to the server until you press Save. But if the tab is closed or hidden with unsaved work,
+  // keep a copy on this device right away so it can be restored next time.
   useEffect(() => {
-    const save = () => { flush(); };
-    const onHide = () => { if (document.visibilityState === 'hidden') save(); };
-    window.addEventListener('pagehide', save);
+    const keep = () => {
+      if (latest.current !== savedRef.current) writeDraft(project.id, { at: Date.now(), base: lastSeen.current, instances: latest.current });
+    };
+    const onHide = () => { if (document.visibilityState === 'hidden') keep(); };
+    const warn = (e: BeforeUnloadEvent) => { if (saveStateRef.current !== 'saved') { keep(); e.preventDefault(); e.returnValue = ''; } };
+    window.addEventListener('pagehide', keep);
+    window.addEventListener('beforeunload', warn);
     document.addEventListener('visibilitychange', onHide);
-    return () => { window.removeEventListener('pagehide', save); document.removeEventListener('visibilitychange', onHide); };
-  }, [flush]);
+    return () => {
+      window.removeEventListener('pagehide', keep);
+      window.removeEventListener('beforeunload', warn);
+      document.removeEventListener('visibilitychange', onHide);
+      clearTimeout(draftTimer.current);
+      keep();
+    };
+  }, [project.id]);
+
+  const confirmLeave = useCallback(
+    () => saveStateRef.current === 'saved' || window.confirm('You have changes that are not saved. Leave without saving?'),
+    [],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (playing) return;
       const tag = (e.target as HTMLElement).tagName;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); void save(); return; } // works even while typing in a script
       if (e.key === 'F5') { e.preventDefault(); setPlaying(editor.instances); return; }
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       const mod = e.ctrlKey || e.metaKey;
@@ -129,7 +199,6 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
       else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); editor.redo(); }
       else if (mod && e.key.toLowerCase() === 'd' && editor.selectedId) { e.preventDefault(); editor.duplicateMany(editor.pickedIds); }
       else if (mod && e.key.toLowerCase() === 'g' && editor.selectedId) { e.preventDefault(); editor.groupMany(editor.pickedIds); }
-      else if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); flush(); }
       else if ((e.key === 'Delete' || e.key === 'Backspace') && editor.selectedId) { editor.removeMany(editor.pickedIds); }
       else if (mod && e.key.toLowerCase() === 'c' && editor.selectedId) { e.preventDefault(); editor.copy(editor.selectedId); }
       else if (mod && e.key.toLowerCase() === 'x' && editor.selectedId) { e.preventDefault(); editor.cut(editor.selectedId); }
@@ -146,7 +215,7 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [editor, flush, playing]);
+  }, [editor, save, playing]);
 
   /** Finds an empty spot near the camera target so new parts never pile up on each other. */
   const freeSpot = (size: Vec3): Vec3 => {
@@ -220,15 +289,36 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
       <TopBar
         projectName={project.name}
         saveState={saveState}
+        saveSlow={saveSlow}
+        onSave={() => { void save(); }}
+        confirmLeave={confirmLeave}
         editor={editor}
         onPlay={() => setPlaying(editor.instances)}
-        onExport={async () => { await flush(); window.open(studioApi.exportUrl(project.id), '_blank'); }}
+        onExport={async () => {
+          if (!(await save())) return; // the download comes from the saved copy
+          const a = document.createElement('a');
+          a.href = studioApi.exportUrl(project.id);
+          document.body.appendChild(a); a.click(); a.remove();
+        }}
         onPublish={() => setDialog('publish')}
         onSettings={() => setDialog('settings')}
         onToggleOutput={() => setOutputOpen((o) => !o)}
         outputOpen={outputOpen}
         outputErrors={outputLines.filter((l) => l.kind === 'error').length}
       />
+      {draftOffer && (
+        <div className={styles.banner} role="status">
+          <span>We found changes you did not save, from {new Date(draftOffer.at).toLocaleString()}.</span>
+          <button type="button" onClick={() => { editor.setAll(draftOffer.instances); setDraftOffer(null); }}>Restore them</button>
+          <button type="button" onClick={() => { clearDraft(project.id); setDraftOffer(null); }}>Discard</button>
+        </div>
+      )}
+      {saveState === 'error' && (
+        <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
+          <span>Could not save: {saveError || 'something went wrong.'} Your changes are still here.</span>
+          <button type="button" onClick={() => { void save(); }}>Try again</button>
+        </div>
+      )}
       <div className={styles.workArea}>
         <main className={styles.center}>
           {openScript ? (
@@ -283,7 +373,7 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
         <PublishDialog
           project={project}
           settingsOnly={dialog === 'settings'}
-          flush={flush}
+          flush={saveOrThrow}
           onSaveIds={saveIds}
           onPublished={(record) => setProject({ ...project, publishHistory: [record, ...project.publishHistory] })}
           onClose={() => setDialog(null)}
@@ -306,7 +396,7 @@ export function StudioPage() {
     studioApi.getProject(id).then(setProject).catch((e) => setError(e.message));
   }, [id]);
 
-  if (error) return <div className={styles.loading}>{error} · <Link to="/">Back to projects</Link></div>;
+  if (error) return <div className={styles.loading}>{error} · <Link to="/projects">Back to projects</Link></div>;
   if (!project) return <div className={styles.loading}>Loading place…</div>;
   return <Editor project={project} setProject={setProject} />;
 }

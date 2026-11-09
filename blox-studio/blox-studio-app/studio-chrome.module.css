@@ -22,6 +22,13 @@
 .brand { display: flex; align-items: center; gap: 0.45rem; color: var(--text); text-decoration: none; font-weight: 700; padding: 0 0.25rem; min-height: 44px; }
 .logo { color: var(--accent); font-size: 1.1rem; }
 .projectName { color: var(--soft); max-width: 22vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 0.6rem; border-left: 1px solid var(--line); }
+.saveBtn { display: inline-flex; align-items: center; gap: 0.4rem; position: relative; min-height: 40px; padding: 0 0.85rem; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--soft); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.saveBtn[data-state='unsaved'] { background: #2f9bff; border-color: #2f9bff; color: #fff; box-shadow: 0 2px 12px rgba(47, 155, 255, 0.35); }
+.saveBtn[data-state='saving'] { color: #e6cf7c; cursor: progress; }
+.saveBtn[data-state='error'] { background: rgba(255, 107, 107, 0.16); border-color: var(--danger); color: var(--danger); }
+.saveBtn[data-state='saved'] { color: #7fd69a; }
+.saveBtn:disabled { opacity: 0.9; }
+.saveDot { position: absolute; top: 5px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: #ffd60a; box-shadow: 0 0 0 2px #2f9bff; }
 .save { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #7fd69a; padding: 0.2rem 0.55rem; border-radius: 999px; background: rgba(47, 208, 107, 0.1); white-space: nowrap; }
 .save[data-state='saving'] { color: #e6cf7c; background: rgba(230, 207, 124, 0.1); }
 .save[data-state='error'] { color: var(--danger); background: rgba(255, 107, 107, 0.12); }
@@ -65,7 +72,7 @@
 .addBtn:active { transform: scale(0.96); }
 
 .sheet {
-  position: absolute; left: 12px; bottom: 76px; z-index: 6; width: min(460px, calc(100% - 24px)); max-height: min(70vh, calc(100% - 100px)); overflow: auto;
+  position: absolute; left: 12px; bottom: 76px; z-index: 6; width: min(460px, calc(100% - 24px)); max-height: min(calc(var(--app-h, 100vh) * 0.7), calc(100% - 100px)); overflow: auto;
   padding: 0.5rem 1rem 1rem; background: rgba(38, 41, 50, 0.97); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   outline: none;
 }
@@ -111,8 +118,9 @@
 }
 @media (max-width: 767px) {
   .top { height: 52px; gap: 0.25rem; padding: 0 0.4rem; }
-  .brandText, .projectName, .saveText, .btnText { display: none; }
+  .brandText, .projectName, .saveText, .btnText, .saveBtnText { display: none; }
   .save { padding: 0.35rem; }
+  .saveBtn { min-width: 44px; min-height: 44px; padding: 0; justify-content: center; }
   .playBtn, .publishBtn { padding: 0; width: 44px; }
   .railBtn { width: 52px; height: 52px; }
   .hint { display: none; }

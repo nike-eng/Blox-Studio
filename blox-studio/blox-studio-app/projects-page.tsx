@@ -35,7 +35,7 @@ export function ProjectsPage() {
   return (
     <div className={styles.home}>
       <header className={styles.top}>
-        <span className={styles.brand}><span className={styles.logo}>◆</span> Blox Studio</span>
+        <Link to="/" className={styles.brand}><span className={styles.logo}>◆</span> Blox Studio</Link>
         <a className={styles.docsLink} href="https://create.roblox.com/docs/cloud/open-cloud/usage-place-publishing" target="_blank" rel="noreferrer">How publishing works ↗</a>
       </header>
       <section className={styles.hero}>
@@ -81,6 +81,7 @@ export function ProjectsPage() {
           ))}
         </div>
       </section>
+      <p className={styles.disclaimer}>Blox Studio is an independent project and is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox is a trademark of Roblox Corporation.</p>
     </div>
   );
 }

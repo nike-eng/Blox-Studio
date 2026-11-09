@@ -1,9 +1,26 @@
+:global(:root) {
+  --app-h: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :global(:root) {
+    --app-h: 100dvh;
+  }
+}
+
 :global(html), :global(body), :global(#root) {
   margin: 0;
   height: 100%;
   background: #1e1f24;
   color: #e6e6e6;
   font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+}
+
+:global(html), :global(body) {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :global(*) {
