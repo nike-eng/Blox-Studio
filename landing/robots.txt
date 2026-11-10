@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://voxmesa.vercel.app/sitemap.xml

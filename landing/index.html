@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>VoxMesa — Free 3D Game Maker for Chromebook, iPad &amp; Phone</title>
+  <meta name="description" content="VoxMesa is a free 3D game editor that runs in your browser. Build worlds with blocks, write Lua scripts and press Play. Works on Chromebook, iPad, phone and laptop." />
+  <meta name="theme-color" content="#faf8f3" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="canonical" href="https://voxmesa.vercel.app/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="VoxMesa" />
+  <meta property="og:title" content="VoxMesa — Free 3D Game Maker" />
+  <meta property="og:description" content="Build worlds with blocks, write Lua scripts and press Play, right in your browser. Free." />
+  <meta property="og:url" content="https://voxmesa.vercel.app/" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="VoxMesa — Free 3D Game Maker" />
+  <meta name="twitter:description" content="Build worlds with blocks, write Lua scripts and press Play, right in your browser. Free." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"VoxMesa","applicationCategory":"GameApplication","operatingSystem":"Any (runs in a web browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A free 3D game editor that runs in your browser. Build worlds with blocks, write Lua scripts and press Play."}
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav-wrap" id="nav">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="#top" aria-label="VoxMesa home">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,13 28,19 16,25 4,19" fill="#9ff0d3"/><polygon points="4,19 16,25 16,31 4,25" fill="#2fcf9b"/><polygon points="16,25 28,19 28,25 16,31" fill="#1ba579"/><polygon points="16,9.5 23,13 16,16.5 9,13" fill="#ffe59a"/><polygon points="9,13 16,16.5 16,22.5 9,19" fill="#ffc233"/><polygon points="16,16.5 23,13 23,19 16,22.5" fill="#d99f14"/></svg>
+        <span>VoxMesa</span>
+      </a>
+      <ul class="links">
+        <li><a href="#features">What you can do</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#devices">Devices</a></li>
+        <li><a href="#faq">Questions</a></li>
+      </ul>
+      <a class="btn btn-dark" href="https://blox-studio.nikethbhat4thh-7ce.workers.dev/projects">Open editor</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="grid-lines" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">Free · Runs in your browser · Nothing to install</p>
+          <h1>Build 3D games with your <span class="rotor" aria-live="off"><span class="rotor-word">thumbs</span></span></h1>
+          <p class="lede">Drag blocks into place, write scripts, and press Play. VoxMesa is a game editor that works on the iPad, phone, Chromebook or laptop you already have.</p>
+          <div class="cta-row">
+            <a class="btn btn-big btn-accent" href="https://blox-studio.nikethbhat4thh-7ce.workers.dev/projects">Open VoxMesa <span aria-hidden="true">→</span></a>
+            <a class="btn btn-big btn-ghost" href="#how">See how it works</a>
+          </div>
+          <dl class="facts">
+            <div><dt>Price</dt><dd>Free</dd></div>
+            <div><dt>Install</dt><dd>None</dd></div>
+            <div><dt>Works on</dt><dd>iPad · Phone · Chromebook · PC</dd></div>
+          </dl>
+        </div>
+        <div class="hero-art">
+          <canvas id="stack" width="640" height="640" role="img" aria-label="Animated colourful blocks stacking up into a small tower"></canvas>
+          <p class="art-note" aria-hidden="true">blocks stacked: <b id="count">0</b></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="wrap">
+        <p class="eyebrow">What you can do</p>
+        <h2>Everything for a first game, <em>in one tab.</em></h2>
+        <div class="cards">
+          <article class="card reveal"><span class="num">01</span><h3>Build with blocks</h3><p>Add parts, move, scale and rotate them with your finger or mouse. Snap to a grid, group things into models, and undo anything.</p></article>
+          <article class="card reveal"><span class="num">02</span><h3>Script it in Lua</h3><p>Write Script, LocalScript and ModuleScript files. Put them in the same places a real game keeps them, and watch the Output window while you play.</p></article>
+          <article class="card reveal"><span class="num">03</span><h3>Press Play</h3><p>Jump into your world straight away with on-screen controls for touch screens. Stop, tweak, play again.</p></article>
+          <article class="card reveal"><span class="num">04</span><h3>Save it, take it with you</h3><p>Save with one button. Export a place file (.rbxlx) that opens in Roblox Studio, or publish it to your own Roblox experience with your own key.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section band" id="how">
+      <div class="wrap two">
+        <div>
+          <p class="eyebrow">How it works</p>
+          <h2>Three steps from idea to <em>playable.</em></h2>
+          <ol class="steps">
+            <li><b>Pick a start.</b> Flat ground, a ready-made Sky Islands course, or an empty place.</li>
+            <li><b>Add and script.</b> Place parts and give them behaviour with a few lines of Lua.</li>
+            <li><b>Play and save.</b> Test it right away. Press Save when you like it.</li>
+          </ol>
+        </div>
+        <figure class="code" aria-label="Example Lua script">
+          <figcaption><span class="dot"></span><span class="dot"></span><span class="dot"></span> KillBrick — Script</figcaption>
+<pre><code><span class="c">-- Touch the red brick and you respawn</span>
+<span class="k">local</span> brick = script.Parent
+
+brick.Touched:<span class="f">Connect</span>(<span class="k">function</span>(hit)
+  <span class="k">local</span> humanoid = hit.Parent:<span class="f">FindFirstChildOfClass</span>(<span class="s">"Humanoid"</span>)
+  <span class="k">if</span> humanoid <span class="k">then</span>
+    humanoid.Health = <span class="n">0</span>
+  <span class="k">end</span>
+<span class="k">end</span>)</code></pre>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="devices">
+      <div class="wrap">
+        <p class="eyebrow">Made for small screens too</p>
+        <h2>The same editor on <em>every device.</em></h2>
+        <ul class="chips">
+          <li>iPad</li><li>Phone</li><li>Chromebook</li><li>Windows</li><li>Mac</li><li>Linux</li>
+        </ul>
+        <p class="sub">Panels fit the screen, controls are made for fingers, and your places are saved online so you can pick them up again.</p>
+      </div>
+    </section>
+
+    <section class="section band" id="faq">
+      <div class="wrap narrow">
+        <p class="eyebrow">Questions</p>
+        <h2>Quick answers</h2>
+        <details><summary>Is it really free?</summary><p>Yes. There is nothing to buy and no account to make.</p></details>
+        <details><summary>Do I need to install anything?</summary><p>No. Open the link in your browser and start building.</p></details>
+        <details><summary>Where are my places saved?</summary><p>On VoxMesa's server, linked to the browser you used. Press Save to store your work; a draft is also kept on your device in case you lose connection.</p></details>
+        <details><summary>Is VoxMesa made by Roblox?</summary><p>No. VoxMesa is an independent project. It is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox and Roblox Studio are trademarks of Roblox Corporation, named here only to describe file compatibility.</p></details>
+        <details><summary>Can I use my places in Roblox Studio?</summary><p>You can export a place file (.rbxlx) and open it there, or publish to your own experience with your own Roblox Open Cloud key.</p></details>
+      </div>
+    </section>
+
+    <section class="cta-final">
+      <div class="wrap">
+        <h2>Ready to make something?</h2>
+        <p>It takes about ten seconds to start.</p>
+        <a class="btn btn-big btn-accent" href="https://blox-studio.nikethbhat4thh-7ce.workers.dev/projects">Open VoxMesa <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p class="foot-brand">VoxMesa</p>
+      <p class="fine">VoxMesa is an independent project. It is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox and Roblox Studio are trademarks of Roblox Corporation, named here only to describe file compatibility.</p>
+    </div>
+  </footer>
+  <script src="/app.js" defer></script>
+</body>
+</html>
