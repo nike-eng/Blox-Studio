@@ -36,8 +36,7 @@ h1 .rotor,h2 em{font-style:italic;color:#1ba579}
 .facts{display:flex;flex-wrap:wrap;gap:12px 36px;margin:0}
 .facts div{display:flex;flex-direction:column}.facts dt{font:500 .72rem/1 "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}.facts dd{margin:0;font-weight:600}
 .hero-art{position:relative;display:flex;flex-direction:column;align-items:center}
-#stack{width:100%;max-width:560px;height:auto;aspect-ratio:1}
-.art-note{font:400 .8rem "JetBrains Mono",monospace;color:var(--muted);margin:0}
+#shapes{display:block;width:100%;max-width:560px;height:auto;aspect-ratio:1;touch-action:pan-y}
 /* sections */
 .section{padding:96px 0}.band{background:var(--band);border-block:1px solid var(--line)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
