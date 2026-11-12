@@ -23,7 +23,7 @@ a{color:inherit}
 /* hero */
 .hero{position:relative;min-height:100svh;display:flex;align-items:center;padding:110px 0 60px;overflow:hidden}
 .grid-lines{position:absolute;inset:0;pointer-events:none;opacity:.55;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:80px 80px;mask-image:radial-gradient(ellipse at 70% 50%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at 70% 50%,#000 20%,transparent 75%)}
-.hero-inner{position:relative;display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;max-width:1280px;margin:0 auto;padding:0 24px;width:100%}
+.hero-inner{position:relative;z-index:10;display:grid;grid-template-columns:1fr;gap:30px;align-items:center;max-width:1280px;margin:0 auto;padding:0 24px;width:100%}
 .eyebrow{font:500 .78rem/1 "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 18px}
 h1{font:400 clamp(2.6rem,7vw,5.4rem)/1.02 "Instrument Serif",Georgia,serif;letter-spacing:-.01em;margin:0 0 22px}
 h2{font:400 clamp(2rem,4.6vw,3.2rem)/1.1 "Instrument Serif",Georgia,serif;margin:0 0 28px;letter-spacing:-.005em}
@@ -35,8 +35,12 @@ h1 .rotor,h2 em{font-style:italic;color:#1ba579}
 .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:34px}
 .facts{display:flex;flex-wrap:wrap;gap:12px 36px;margin:0}
 .facts div{display:flex;flex-direction:column}.facts dt{font:500 .72rem/1 "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}.facts dd{margin:0;font-weight:600}
-.hero-art{position:relative;display:flex;flex-direction:column;align-items:center}
-#shapes{display:block;width:100%;max-width:560px;height:auto;aspect-ratio:1;touch-action:pan-y}
+.hero-copy{max-width:700px}
+/* the spinning circle and triangle come from the Optimus template, same sizes and placement */
+.orb{position:absolute;right:0;top:50%;transform:translateY(-50%);width:600px;height:600px;opacity:.4;pointer-events:none}
+.orb canvas,.tetra canvas{display:block;width:100%;height:100%}
+.tetra{display:none;align-items:center;justify-content:center;width:500px;height:500px;margin-right:-64px;flex:none}
+@media (min-width:1024px){.orb{width:800px;height:800px}.tetra{display:flex}}
 /* sections */
 .section{padding:96px 0}.band{background:var(--band);border-block:1px solid var(--line)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
@@ -54,7 +58,13 @@ pre{margin:0;padding:18px 20px;overflow-x:auto;font:400 .88rem/1.7 "JetBrains Mo
 .chips{display:flex;flex-wrap:wrap;gap:10px;list-style:none;padding:0;margin:0 0 20px}.chips li{border:1px solid var(--line);background:var(--card);padding:10px 18px;border-radius:999px;font-weight:600}
 .sub{color:var(--muted);max-width:40em;margin:0}
 details{border-bottom:1px solid var(--line);padding:18px 0}summary{cursor:pointer;font-weight:600;font-size:1.05rem;list-style:none;display:flex;justify-content:space-between;gap:16px}summary::after{content:"+";font-family:"JetBrains Mono",monospace;color:var(--muted)}details[open] summary::after{content:"–"}summary::-webkit-details-marker{display:none}details p{color:var(--muted);margin:12px 0 0}
-.cta-final{text-align:center;padding:110px 0}.cta-final p{color:var(--muted);margin:0 0 26px}
+.cta-final{padding:96px 0}
+.cta-box{position:relative;overflow:hidden;border:1px solid var(--ink);display:flex;align-items:center;justify-content:space-between;gap:48px;padding:56px 28px}
+.cta-copy{flex:1;position:relative;z-index:1;text-align:left}.cta-copy h2{margin-bottom:16px}.cta-copy p{color:var(--muted);margin:0 0 26px}
+.cta-copy .cta-small{font:400 .85rem "JetBrains Mono",monospace;margin:26px 0 0}
+.corner{position:absolute;width:128px;height:128px;border:0 solid color-mix(in srgb,var(--ink) 14%,transparent);pointer-events:none}
+.corner-tr{top:0;right:0;border-bottom-width:1px;border-left-width:1px}.corner-bl{bottom:0;left:0;border-top-width:1px;border-right-width:1px}
+@media (min-width:1024px){.cta-box{padding:96px 64px}}
 .footer{border-top:1px solid var(--line);padding:40px 0 60px}.foot-brand{font-weight:700;margin:0 0 8px}.fine{font-size:.85rem;color:var(--muted);max-width:60em;margin:0}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}.reveal.in{opacity:1;transform:none}
 @media (max-width:860px){.links{display:none}.hero-inner{grid-template-columns:1fr}.hero{padding-top:100px}.two{grid-template-columns:1fr;gap:28px}.section{padding:70px 0}.nav{height:64px;padding:0 16px}}

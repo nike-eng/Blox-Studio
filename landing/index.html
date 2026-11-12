@@ -45,6 +45,7 @@
 
   <main id="main">
     <section class="hero" id="top">
+      <div class="orb" aria-hidden="true"><canvas id="optimus-sphere"></canvas></div>
       <div class="grid-lines" aria-hidden="true"></div>
       <div class="hero-inner">
         <div class="hero-copy">
@@ -60,9 +61,6 @@
             <div><dt>Install</dt><dd>None</dd></div>
             <div><dt>Works on</dt><dd>iPad · Phone · Chromebook · PC</dd></div>
           </dl>
-        </div>
-        <div class="hero-art">
-          <canvas id="shapes" width="640" height="640" role="img" aria-label="A spinning globe and a spinning pyramid drawn out of text characters"></canvas>
         </div>
       </div>
     </section>
@@ -131,9 +129,16 @@ brick.Touched:<span class="f">Connect</span>(<span class="k">function</span>(hit
 
     <section class="cta-final">
       <div class="wrap">
-        <h2>Ready to make something?</h2>
-        <p>It takes about ten seconds to start.</p>
-        <a class="btn btn-big btn-accent" href="https://blox-studio.nikethbhat4thh-7ce.workers.dev/projects">Open VoxMesa <span aria-hidden="true">→</span></a>
+        <div class="cta-box">
+          <div class="cta-copy">
+            <h2>Ready to make something?</h2>
+            <p>It takes about ten seconds to start.</p>
+            <a class="btn btn-big btn-accent" href="https://blox-studio.nikethbhat4thh-7ce.workers.dev/projects">Open VoxMesa <span aria-hidden="true">→</span></a>
+            <p class="cta-small">Free · No account needed</p>
+          </div>
+          <div class="tetra" aria-hidden="true"><canvas id="optimus-tetra"></canvas></div>
+          <span class="corner corner-tr" aria-hidden="true"></span><span class="corner corner-bl" aria-hidden="true"></span>
+        </div>
       </div>
     </section>
   </main>
