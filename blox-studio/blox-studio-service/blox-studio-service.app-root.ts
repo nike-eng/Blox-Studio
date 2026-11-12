@@ -25,6 +25,9 @@ export function run() {
     if (req.method === 'OPTIONS') { res.status(204).end(); return; }
     next();
   });
+    app.get('/ping', (_req, res) => {
+    res.status(200).send('pong');
+  });
 
   app.use(express.json({ limit: '20mb' }));
   app.use(async (_req, _res, next) => { await ready; next(); });
