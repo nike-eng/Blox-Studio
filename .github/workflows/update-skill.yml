@@ -1,0 +1,53 @@
+name: Auto-Update Claude SKILL.md
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.claude/skills/voxmesa-builder/SKILL.md'
+
+permissions:
+  contents: write
+
+jobs:
+  update-skill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate SKILL.md from live codebase
+        run: |
+          mkdir -p .claude/skills/voxmesa-builder
+          SKILL=".claude/skills/voxmesa-builder/SKILL.md"
+          SERVER="blox-studio/blox-studio-service/blox-studio-service.app-root.ts"
+
+          printf '%s\n' \
+            "---" \
+            "name: voxmesa-builder" \
+            "description: Auto-synced architecture, rules, and live route map for VoxMesa. Always read this before editing code." \
+            "---" \
+            "" \
+            "# VoxMesa Auto-Synced Architecture & Rules" \
+            "" \
+            "## 1. Stack & Invariants" \
+            "- **Frontend:** Cloudflare Pages (voxmesa.vercel.app redirects here)." \
+            "- **Backend:** Render (https://onrender.com), Node.js + TypeScript + Express." \
+            "- **Main Server File:** blox-studio/blox-studio-service/blox-studio-service.app-root.ts." \
+            "- **Rule 1 (Keep-Alive):** Never move or delete app.get('/ping', ...) above await ready." \
+            "- **Rule 2 (Token Saver):** Never scrape external API directories (public-apis README) or rewrite entire files. Output only exact diffs/snippets." \
+            "- **Rule 3 (Secrets):** Read API keys only via process.env.<KEY_NAME>. Cache external public API responses in MongoDB." \
+            "" \
+            "## 2. Live Express Routes (Auto-Extracted)" > "$SKILL"
+
+          grep -E "app\.(get|post|put|delete|use)\(" "$SERVER" | sed 's/^[[:space:]]*/- /' >> "$SKILL" || echo "- None found" >> "$SKILL"
+
+          printf '\n%s\n' "## 3. Repository File Map (Auto-Extracted)" >> "$SKILL"
+          find . -maxdepth 4 -not -path '*/.*' -not -path './node_modules*' -not -path './dist*' -type f | sort | sed 's/^/- /' >> "$SKILL"
+
+      - name: Commit updated SKILL.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@://github.com"
+          git add .claude/skills/voxmesa-builder/SKILL.md
+          git diff --staged --quiet || git commit -m "chore: auto-sync SKILL.md with latest routes"
+          git push
