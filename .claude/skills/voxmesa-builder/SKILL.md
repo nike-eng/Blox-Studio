@@ -1,0 +1,136 @@
+---
+name: voxmesa-builder
+description: Auto-synced architecture, rules, and live route map for VoxMesa. Always read this before editing code.
+---
+
+# VoxMesa Auto-Synced Architecture & Rules
+
+## 1. Stack & Invariants
+- **Frontend:** Cloudflare Pages (voxmesa.vercel.app redirects here).
+- **Backend:** Render (https://onrender.com), Node.js + TypeScript + Express.
+- **Main Server File:** blox-studio/blox-studio-service/blox-studio-service.app-root.ts.
+- **Rule 1 (Keep-Alive):** Never move or delete app.get('/ping', ...) above await ready.
+- **Rule 2 (Token Saver):** Never scrape external API directories (public-apis README) or rewrite entire files. Output only exact diffs/snippets.
+- **Rule 3 (Secrets):** Read API keys only via process.env.<KEY_NAME>. Cache external public API responses in MongoDB.
+
+## 2. Live Express Routes (Auto-Extracted)
+- app.use((req, res, next) => {
+- app.get('/ping', (_req, res) => {
+- app.use(express.json({ limit: '20mb' }));
+- app.use(async (_req, _res, next) => { await ready; next(); });
+- app.use('/projects', requireOwner);
+- app.use('/mcp-link', requireOwner);
+- app.get('/', (_req, res) => { res.json({ message: 'VoxMesa service' }); });
+- app.get('/roblox/status', (_req, res) => {
+- app.get('/projects', wrap(async (_req, res) => {
+- app.post('/projects', wrap(async (req, res) => {
+- app.get('/projects/:id', wrap(async (req, res) => {
+- app.put('/projects/:id', wrap(async (req, res) => {
+- app.delete('/projects/:id', wrap(async (req, res) => {
+- app.get('/projects/:id/export', wrap(async (req, res) => {
+- app.get('/projects/:id/publish-check', wrap(async (req, res) => {
+- app.post('/projects/:id/publish', wrap(async (req, res) => {
+- app.get('/mcp-link', wrap(async (_req, res) => { res.json({ active: await service.projects.hasMcpLink(ownerOf(res)) }); }));
+- app.post('/mcp-link', wrap(async (_req, res) => { res.json({ token: await service.projects.createMcpLink(ownerOf(res)) }); }));
+- app.delete('/mcp-link', wrap(async (_req, res) => { await service.projects.revokeMcpLink(ownerOf(res)); res.json({ ok: true }); }));
+- app.post('/mcp/:token', async (req, res) => {
+- app.get('/mcp/:token', (_req, res) => { res.status(405).set('Allow', 'POST').json({ message: 'This is a VoxMesa AI link. Add it as a custom connector in your AI app.' }); });
+
+## 3. Repository File Map (Auto-Extracted)
+- ./AGENTS.md
+- ./blox-studio/blox-studio-app/ai-link.tsx
+- ./blox-studio/blox-studio-app/base.module.css
+- ./blox-studio/blox-studio-app/blox-studio-app.app-root.tsx
+- ./blox-studio/blox-studio-app/blox-studio-app.bit-app.ts
+- ./blox-studio/blox-studio-app/blox-studio-app.compositions.tsx
+- ./blox-studio/blox-studio-app/blox-studio-app.docs.mdx
+- ./blox-studio/blox-studio-app/blox-studio-app.tsx
+- ./blox-studio/blox-studio-app/brand-mark.tsx
+- ./blox-studio/blox-studio-app/class-icon.tsx
+- ./blox-studio/blox-studio-app/explorer-panel.tsx
+- ./blox-studio/blox-studio-app/home.module.css
+- ./blox-studio/blox-studio-app/icons.tsx
+- ./blox-studio/blox-studio-app/index.html
+- ./blox-studio/blox-studio-app/index.ts
+- ./blox-studio/blox-studio-app/landing-page.module.css
+- ./blox-studio/blox-studio-app/landing-page.tsx
+- ./blox-studio/blox-studio-app/material-textures.ts
+- ./blox-studio/blox-studio-app/output-panel.module.css
+- ./blox-studio/blox-studio-app/output-panel.tsx
+- ./blox-studio/blox-studio-app/part-visual.tsx
+- ./blox-studio/blox-studio-app/particle-burst.tsx
+- ./blox-studio/blox-studio-app/playtest-avatar.tsx
+- ./blox-studio/blox-studio-app/playtest-runtime.ts
+- ./blox-studio/blox-studio-app/playtest-world.tsx
+- ./blox-studio/blox-studio-app/playtest.module.css
+- ./blox-studio/blox-studio-app/playtest.tsx
+- ./blox-studio/blox-studio-app/postprocessing.d.ts
+- ./blox-studio/blox-studio-app/projects-page.tsx
+- ./blox-studio/blox-studio-app/properties-panel.tsx
+- ./blox-studio/blox-studio-app/property-fields.tsx
+- ./blox-studio/blox-studio-app/publish-dialog.tsx
+- ./blox-studio/blox-studio-app/ribbon.tsx
+- ./blox-studio/blox-studio-app/scene-environment.tsx
+- ./blox-studio/blox-studio-app/script-editor.tsx
+- ./blox-studio/blox-studio-app/server.app-root.tsx
+- ./blox-studio/blox-studio-app/sky-dome.tsx
+- ./blox-studio/blox-studio-app/studio-api.ts
+- ./blox-studio/blox-studio-app/studio-chrome.module.css
+- ./blox-studio/blox-studio-app/studio-chrome.tsx
+- ./blox-studio/blox-studio-app/studio-page.tsx
+- ./blox-studio/blox-studio-app/studio.module.css
+- ./blox-studio/blox-studio-app/touch-controls.tsx
+- ./blox-studio/blox-studio-app/tsconfig.json
+- ./blox-studio/blox-studio-app/use-place-editor.ts
+- ./blox-studio/blox-studio-app/viewport-height.ts
+- ./blox-studio/blox-studio-app/viewport.tsx
+- ./blox-studio/blox-studio-app/vite.config.js
+- ./blox-studio/blox-studio-platform/blox-studio-platform.bit-app.tsx
+- ./blox-studio/blox-studio-platform/index.ts
+- ./blox-studio/blox-studio-service/blox-studio-service.app-root.ts
+- ./blox-studio/blox-studio-service/blox-studio-service.bit-app.tsx
+- ./blox-studio/blox-studio-service/blox-studio-service.docs.mdx
+- ./blox-studio/blox-studio-service/blox-studio-service.spec.ts
+- ./blox-studio/blox-studio-service/blox-studio-service.ts
+- ./blox-studio/blox-studio-service/index.ts
+- ./blox-studio/blox-studio-service/mcp.spec.ts
+- ./blox-studio/blox-studio-service/mcp.ts
+- ./blox-studio/blox-studio-service/project-repository.ts
+- ./blox-studio/blox-studio-service/roblox-publisher.ts
+- ./blox-studio/rbxlx-serializer/blox-runtime.ts
+- ./blox-studio/rbxlx-serializer/index.ts
+- ./blox-studio/rbxlx-serializer/luau-lite.spec.ts
+- ./blox-studio/rbxlx-serializer/luau-lite.ts
+- ./blox-studio/rbxlx-serializer/materials.ts
+- ./blox-studio/rbxlx-serializer/obby-template.ts
+- ./blox-studio/rbxlx-serializer/place-factory.ts
+- ./blox-studio/rbxlx-serializer/place-types.ts
+- ./blox-studio/rbxlx-serializer/rbxlx-serializer.docs.mdx
+- ./blox-studio/rbxlx-serializer/rbxlx-serializer.spec.ts
+- ./blox-studio/rbxlx-serializer/rbxlx-serializer.ts
+- ./blox-studio/rbxlx-serializer/studio-lua.ts
+- ./landing/app.js
+- ./landing/favicon.svg
+- ./landing/index.html
+- ./landing/robots.txt
+- ./landing/sitemap.xml
+- ./landing/styles.css
+- ./landing/vercel.json
+- ./package-lock.json
+- ./package.json
+- ./pnpm-lock.yaml
+- ./render.yaml
+- ./server/README.md
+- ./server/package.json
+- ./server/serve.ts
+- ./standalone/README.md
+- ./standalone/package.json
+- ./standalone/prepare.mjs
+- ./standalone/static/favicon.svg
+- ./standalone/static/robots.txt
+- ./standalone/static/sitemap.xml
+- ./standalone/vite.config.js
+- ./standalone/wrangler.jsonc
+- ./tsconfig.json
+- ./workspace.jsonc
+- ./wrangler.jsonc
