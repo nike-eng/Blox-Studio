@@ -98,6 +98,8 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-service/project-repository.ts
 - ./blox-studio/blox-studio-service/roblox-publisher.ts
 - ./blox-studio/rbxlx-serializer/blox-runtime.ts
+- ./blox-studio/rbxlx-serializer/game-runtime.spec.ts
+- ./blox-studio/rbxlx-serializer/game-runtime.ts
 - ./blox-studio/rbxlx-serializer/index.ts
 - ./blox-studio/rbxlx-serializer/luau-lite.spec.ts
 - ./blox-studio/rbxlx-serializer/luau-lite.ts
