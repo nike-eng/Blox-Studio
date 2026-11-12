@@ -39,7 +39,7 @@
       ctx.scale(dpr, dpr);
     };
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => { resize(); if (reduce) render(); });
     const render = () => {
       const rect = canvas.getBoundingClientRect();
       ctx.clearRect(0, 0, rect.width, rect.height);
@@ -92,7 +92,7 @@
       ctx.scale(dpr, dpr);
     };
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => { resize(); if (reduce) render(); });
     // Tetrahedron vertices
     const vertices = [
       { x: 0, y: 1, z: 0 },              // Top
@@ -169,4 +169,13 @@
 
   const sphere = document.getElementById('optimus-sphere'); if (sphere) animatedSphere(sphere);
   const tetra = document.getElementById('optimus-tetra'); if (tetra) animatedTetrahedron(tetra);
+
+  // Keep both canvases sharp and the right shape: re-measure whenever their box changes (rotating the iPad, zoom,
+  // coming back to the tab, browser quirks). A stale size is what makes the characters look stretched and blurry.
+  let refitQueued = false;
+  const refit = () => { if (refitQueued) return; refitQueued = true; requestAnimationFrame(() => { refitQueued = false; window.dispatchEvent(new Event('resize')); }); };
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(refit); [sphere, tetra].forEach((c) => c && ro.observe(c)); }
+  window.addEventListener('pageshow', refit);
+  window.addEventListener('orientationchange', refit);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', refit);
 })();
