@@ -513,6 +513,19 @@ export class Interpreter {
 
   abort(): void { this.aborted = true; }
 
+  /** Like `run`, but also returns what the chunk `return`ed (used for ModuleScripts). */
+  async runChunk(src: string, chunkName = 'module'): Promise<{ ok: boolean; values: unknown[]; error?: string }> {
+    this.steps = 0;
+    try {
+      const sig = await this.execBlock(parse(src), new Scope(this.globals));
+      return { ok: true, values: sig?.kind === 'return' ? sig.values : [] };
+    } catch (e) {
+      const msg = e instanceof LuauError ? e.message : `Internal error: ${(e as Error).message}`;
+      if (!this.aborted) this.out('error', `${chunkName}: ${msg}`);
+      return { ok: false, values: [], error: msg };
+    }
+  }
+
   private async tick(line: number): Promise<void> {
     if (this.aborted) throw new LuauError('Script stopped');
     this.steps++;
@@ -711,6 +724,7 @@ export class Interpreter {
     if (a instanceof Vector3 && b instanceof Vector3) return a.x === b.x && a.y === b.y && a.z === b.z;
     if (a instanceof Color3 && b instanceof Color3) return a.r === b.r && a.g === b.g && a.b === b.b;
     if (a == null && b == null) return true;
+    if (a && b && typeof a === 'object' && typeof (a as HostObject & { equals?: (o: unknown) => boolean }).equals === 'function') return (a as HostObject & { equals: (o: unknown) => boolean }).equals(b);
     return false;
   }
 

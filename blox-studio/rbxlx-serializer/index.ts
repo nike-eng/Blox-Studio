@@ -9,4 +9,6 @@ export { SERVICE_CLASSES, PART_CLASSES, SCRIPT_CLASSES } from './place-types.js'
 export type { ClassName, PartShape, PartBehavior, PartMotion, Vec3, InstanceProps, PlaceInstance } from './place-types.js';
 export { Interpreter, LuaTable, LuauError, Vector3, Color3, parse, tostr } from './luau-lite.js';
 export { runStudioScript } from './studio-lua.js';
+export { GameRuntime, CharacterState, Signal, InstanceRef, CFrameV } from './game-runtime.js';
+export type { Side, OutKind as RuntimeOutKind, RuntimeOptions } from './game-runtime.js';
 export type { OutputKind, OutputLine, RunResult } from './studio-lua.js';

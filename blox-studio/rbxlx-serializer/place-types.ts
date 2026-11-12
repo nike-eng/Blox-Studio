@@ -80,6 +80,12 @@ export type InstanceProps = {
   spinSpeed?: number;
   /** Luau source code for scripts. */
   source?: string;
+  /** A disabled script never runs. */
+  disabled?: boolean;
+  /** CollectionService tags. */
+  tags?: string[];
+  /** Custom attributes set with `SetAttribute`. */
+  attributes?: Record<string, unknown>;
   /** Light brightness. */
   brightness?: number;
   /** Light range in studs. */
