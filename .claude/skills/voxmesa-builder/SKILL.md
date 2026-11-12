@@ -126,6 +126,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./standalone/README.md
 - ./standalone/package.json
 - ./standalone/prepare.mjs
+- ./standalone/static/_redirects
 - ./standalone/static/favicon.svg
 - ./standalone/static/robots.txt
 - ./standalone/static/sitemap.xml
