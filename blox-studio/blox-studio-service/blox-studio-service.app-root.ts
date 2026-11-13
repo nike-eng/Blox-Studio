@@ -38,7 +38,7 @@ export function run() {
   });
       app.get('/ping', async (_req, res) => {
     try {
-      await supabase.storage.from(uploads').list('', { limit: 1 });
+      await supabase.storage.from('uploads').list('', { limit: 1 });
     } catch {
       // Ignore storage ping errors so Render uptime check always succeeds
     }
