@@ -1,5 +1,5 @@
 import type { ClassName, InstanceProps, PlaceInstance } from './place-types.js';
-import { SERVICE_CLASSES } from './place-types.js';
+import { NESTED_SERVICES, SERVICE_CLASSES } from './place-types.js';
 import { buildObby } from './obby-template.js';
 
 /**
@@ -78,18 +78,35 @@ export function createInstance(
 export type PlaceTemplate = 'baseplate' | 'obby' | 'empty';
 
 /**
+ * Makes sure every Roblox service exists (older saved places lack the newer ones). Nothing existing is changed or moved.
+ * @param instances - a place's instances
+ * @returns the same instances plus any missing services, services first in Explorer order
+ */
+export function ensureServices(instances: PlaceInstance[]): PlaceInstance[] {
+  const have = new Set(instances.map((i) => i.id));
+  const missing = SERVICE_CLASSES.filter((cls) => !have.has(cls)).map((cls): PlaceInstance => ({
+    id: cls,
+    className: cls,
+    name: cls,
+    parentId: NESTED_SERVICES[cls] ?? null,
+    props: { ...(DEFAULT_PROPS[cls] || {}) },
+  }));
+  if (!missing.length) return instances;
+  const all = [...missing, ...instances];
+  // Explorer order: services in Roblox's order first, then everything else as it was.
+  const rank = (i: PlaceInstance) => { const n = SERVICE_CLASSES.indexOf(i.id as never); return n < 0 ? SERVICE_CLASSES.length : n; };
+  const services = all.filter((i) => SERVICE_CLASSES.includes(i.className) && i.id === i.className).sort((a, b) => rank(a) - rank(b));
+  const rest = all.filter((i) => !(SERVICE_CLASSES.includes(i.className) && i.id === i.className));
+  return [...services, ...rest];
+}
+
+/**
  * Builds the instance list for a new place from a template.
  * @param template - which starter template to use
  * @returns flat list of instances including root services
  */
 export function createPlaceTemplate(template: PlaceTemplate = 'baseplate'): PlaceInstance[] {
-  const services: PlaceInstance[] = SERVICE_CLASSES.map((cls) => ({
-    id: cls,
-    className: cls,
-    name: cls,
-    parentId: null,
-    props: { ...(DEFAULT_PROPS[cls] || {}) },
-  }));
+  const services = ensureServices([]);
   if (template === 'empty') return services;
 
   if (template === 'obby') {

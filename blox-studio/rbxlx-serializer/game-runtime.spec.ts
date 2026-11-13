@@ -1,4 +1,4 @@
-import { GameRuntime, createInstance, createPlaceTemplate, type PlaceInstance } from './index.js';
+import { GameRuntime, createInstance, createPlaceTemplate, ensureServices, toRbxlx, type PlaceInstance } from './index.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function place(scripts: { cls: 'Script' | 'LocalScript' | 'ModuleScript'; parent: string; name: string; src: string }[], parts: { name: string; parent?: string }[] = []) {
@@ -79,5 +79,32 @@ describe('GameRuntime', () => {
     const { rt, lines } = await boot(list);
     expect(lines.some((l) => l.startsWith('error:Workspace.Bad:') && l.includes('Nope is not a valid member of Workspace'))).toBe(true);
     rt.stop(); await sleep(80);
+  });
+
+  it('copies StarterPlayerScripts into the player and runs them there', async () => {
+    const list = place([
+      { cls: 'LocalScript', parent: 'StarterPlayerScripts', name: 'Input', src: 'print("player script in", script.Parent.Name, "of", script.Parent.Parent.Name)' },
+      { cls: 'LocalScript', parent: 'StarterPlayer', name: 'Wrong', src: 'print("should not run")' },
+    ]);
+    const { rt, lines } = await boot(list);
+    expect(lines).toEqual(['player script in\tPlayerScripts\tof\tPlayer']);
+    rt.stop();
+  });
+
+  it('adds missing services to old places without touching anything else', () => {
+    const old = createPlaceTemplate('obby').filter((i) => !['StarterPlayer', 'StarterPlayerScripts', 'StarterCharacterScripts', 'StarterPack', 'ServerStorage', 'ReplicatedFirst'].includes(i.id));
+    const fixed = ensureServices(old);
+    const ids = fixed.map((i) => i.id);
+    expect(ids.slice(0, 11)).toEqual(['Workspace', 'Lighting', 'ReplicatedFirst', 'ReplicatedStorage', 'ServerScriptService', 'ServerStorage', 'StarterGui', 'StarterPack', 'StarterPlayer', 'StarterPlayerScripts', 'StarterCharacterScripts']);
+    expect(fixed.find((i) => i.id === 'StarterPlayerScripts')!.parentId).toBe('StarterPlayer');
+    expect(fixed.length).toBe(old.length + 6);
+    expect(ensureServices(fixed)).toBe(fixed);
+  });
+
+  it('exports one StarterPlayer, with BloxClient inside the place\'s own StarterPlayerScripts', () => {
+    const xml = toRbxlx(createPlaceTemplate('obby'));
+    expect((xml.match(/class="StarterPlayer"/g) || []).length).toBe(1);
+    expect((xml.match(/class="StarterPlayerScripts"/g) || []).length).toBe(1);
+    expect((xml.match(/name="Name">BloxClient</g) || []).length).toBe(1);
   });
 });

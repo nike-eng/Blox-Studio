@@ -3,6 +3,7 @@ import {
   createInstance,
   newInstanceId,
   SERVICE_CLASSES,
+  ensureServices,
   type ClassName,
   type InstanceProps,
   type PlaceInstance,
@@ -43,7 +44,7 @@ export function subtreeIds(instances: PlaceInstance[], id: string): Set<string> 
  * @returns editor state and actions
  */
 export function usePlaceEditor(initial: PlaceInstance[], onChange?: (instances: PlaceInstance[]) => void) {
-  const [instances, setInstances] = useState<PlaceInstance[]>(initial);
+  const [instances, setInstances] = useState<PlaceInstance[]>(() => ensureServices(initial));
   const [selectedId, setSelectedIdRaw] = useState<string | null>(null);
   const [multiIds, setMultiIds] = useState<string[]>([]);
   const [tool, setTool] = useState<Tool>('move');

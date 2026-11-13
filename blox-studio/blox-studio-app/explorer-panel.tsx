@@ -20,7 +20,7 @@ export type ExplorerPanelProps = {
  * Explorer panel: the place's instance hierarchy with selection, insert menus and drag-to-reparent.
  */
 export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(['Lighting', 'ReplicatedStorage', 'StarterGui']));
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(['Lighting', 'ReplicatedFirst', 'ReplicatedStorage', 'ServerStorage', 'StarterGui', 'StarterPack', 'StarterPlayer']));
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [actionsFor, setActionsFor] = useState<string | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);

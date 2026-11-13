@@ -229,6 +229,9 @@ export function toRbxlx(instances: PlaceInstance[]): string {
     const referent = nextRef();
     const kids = (children.get(inst.id) || []).map(render);
     if (inst.className === 'Lighting') kids.push(...lightingExtras(inst).map(renderRaw));
+    if (inst.className === 'StarterPlayerScripts' && gameplay) {
+      kids.push(renderRaw({ className: 'LocalScript', props: `<string name="Name">BloxClient</string><ProtectedString name="Source">${cdata(BLOX_CLIENT_RUNTIME)}</ProtectedString>` }));
+    }
     if (inst.className === 'ServerScriptService' && gameplay) {
       kids.push(renderRaw({ className: 'Script', props: `<string name="Name">BloxRuntime</string><ProtectedString name="Source">${cdata(BLOX_SERVER_RUNTIME)}</ProtectedString>` }));
     }
@@ -236,7 +239,7 @@ export function toRbxlx(instances: PlaceInstance[]): string {
   };
 
   const body = (children.get(null) || []).map(render);
-  if (gameplay) {
+  if (gameplay && !instances.some((i) => i.className === 'StarterPlayerScripts')) {
     body.push(renderRaw({
       className: 'StarterPlayer',
       props: '<string name="Name">StarterPlayer</string>',

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import type { ClassName, InstanceProps } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import { SERVICE_CLASSES, type ClassName, type InstanceProps } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import type { PlaceEditor, Tool } from './use-place-editor.js';
 import { Icon, type IconName } from './icons.js';
 import s from './studio-chrome.module.css';
@@ -263,7 +263,7 @@ export function SelectionBar({ editor, onFocus }: SelectionBarProps) {
   const { selected, pickedIds, duplicateMany, copy, cut, paste, canPaste, groupMany, ungroup, removeMany, updateProps } = editor;
   if (!selected) return null;
   const many = pickedIds.length > 1;
-  const isService = ['Workspace', 'Lighting', 'ReplicatedStorage', 'ServerScriptService', 'StarterGui'].includes(selected.className);
+  const isService = SERVICE_CLASSES.includes(selected.className);
   const isContainer = !many && (selected.className === 'Model' || selected.className === 'Folder');
   const act = (icon: IconName, label: string, run: () => void, extra?: { disabled?: boolean; danger?: boolean }) => (
     <button

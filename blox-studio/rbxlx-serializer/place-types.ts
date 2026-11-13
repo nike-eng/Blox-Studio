@@ -7,6 +7,12 @@ export type ClassName =
   | 'ReplicatedStorage'
   | 'ServerScriptService'
   | 'StarterGui'
+  | 'ReplicatedFirst'
+  | 'ServerStorage'
+  | 'StarterPack'
+  | 'StarterPlayer'
+  | 'StarterPlayerScripts'
+  | 'StarterCharacterScripts'
   | 'Part'
   | 'TrussPart'
   | 'SpawnLocation'
@@ -122,10 +128,24 @@ export type PlaceInstance = {
 export const SERVICE_CLASSES: ClassName[] = [
   'Workspace',
   'Lighting',
+  'ReplicatedFirst',
   'ReplicatedStorage',
   'ServerScriptService',
+  'ServerStorage',
   'StarterGui',
+  'StarterPack',
+  'StarterPlayer',
+  'StarterPlayerScripts',
+  'StarterCharacterScripts',
 ];
+
+/**
+ * Services that live inside another service instead of at the root (Roblox creates these inside StarterPlayer).
+ */
+export const NESTED_SERVICES: Partial<Record<ClassName, ClassName>> = {
+  StarterPlayerScripts: 'StarterPlayer',
+  StarterCharacterScripts: 'StarterPlayer',
+};
 
 /**
  * Classes that render as 3D parts.

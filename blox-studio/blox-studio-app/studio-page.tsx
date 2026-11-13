@@ -260,7 +260,7 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
       return;
     }
     if (item.className === 'Script' || item.className === 'LocalScript' || item.className === 'ModuleScript') {
-      const parent = item.className === 'Script' ? 'ServerScriptService' : item.className === 'ModuleScript' ? 'ReplicatedStorage' : 'StarterGui';
+      const parent = item.className === 'Script' ? 'ServerScriptService' : item.className === 'ModuleScript' ? 'ReplicatedStorage' : 'StarterPlayerScripts';
       const created = editor.insert(item.className, parent);
       setOpenScriptId(created.id);
       return;
