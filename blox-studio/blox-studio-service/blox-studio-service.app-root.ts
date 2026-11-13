@@ -38,7 +38,7 @@ export function run() {
   });
       app.get('/ping', async (_req, res) => {
     try {
-      await supabase.storage.from('Uploads').list('', { limit: 1 });
+      await supabase.storage.from(uploads').list('', { limit: 1 });
     } catch {
       // Ignore storage ping errors so Render uptime check always succeeds
     }
@@ -74,7 +74,7 @@ export function run() {
     const safeName = `${ownerOf(res)}/${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
 
     const { error } = await supabase.storage
-      .from('Uploads')
+      .from('uploads')
       .upload(safeName, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: false,
@@ -83,7 +83,7 @@ export function run() {
     if (error) throw new Error(error.message);
 
     const { data } = supabase.storage
-      .from('Uploads')
+      .from('uploads')
       .getPublicUrl(safeName);
 
     res.json({ url: data.publicUrl });
