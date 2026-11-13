@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Runs the Blox Studio server (projects, AI link, Roblox publishing) outside Bit, for free hosts like Render.",
   "scripts": {
-    "build": "esbuild serve.ts --bundle --platform=node --format=esm --target=node20 --node-paths=node_modules --outfile=dist/server.mjs --external:express --external:mongoose --alias:@nikethbhat4thh/blox-studio.rbxlx-serializer=../blox-studio/rbxlx-serializer/index.ts",
+    "build": "esbuild serve.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.mjs --external:express --external:mongoose --external:multer --external:@supabase/supabase-js --alias:@nikethbhat4thh/blox-studio.rbxlx-serializer=../blox-studio/rbxlx-serializer/index.ts",
     "start": "node dist/server.mjs"
   },
   "dependencies": {
