@@ -106,6 +106,24 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
  * Client for the VoxMesa service REST API.
  */
 export const studioApi = {
+  /** Uploads an image or binary file to Supabase Storage and returns its public URL. */
+  async uploadFile(file: File | Blob, filename = 'upload.bin'): Promise<string> {
+    const form = new FormData();
+    form.append('file', file, filename);
+
+    const res = await fetch(`${serviceUrl()}/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'x-owner-key': ownerKey() },
+      body: form,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new ApiError(data.message || `Upload failed (${res.status})`, res.status);
+    }
+    return data.url;
+  },
   /** Lists projects. */
   listProjects: () => request<ProjectSummary[]>('/projects'),
   /** Gets a project. */
