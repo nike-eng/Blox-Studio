@@ -2,19 +2,16 @@ name: Weekly MongoDB Backup
 
 on:
   schedule:
-    # Runs every Sunday at 02:00 UTC
     - cron: '0 2 * * 0'
-  workflow_dispatch: # Allows you to trigger a backup manually anytime
+  workflow_dispatch:
 
 jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Install MongoDB Database Tools
-        run: |
-          wget -q https://mongodb.org
-          tar -xzf mongodb-database-tools-ubuntu2204-x86_64-100.10.0.tgz
-          sudo cp mongodb-database-tools-ubuntu2204-x86_64-100.10.0/bin/* /usr/local/bin/
+      - uses: brianlund/setup-mongodb-database-tools@v1
+        with:
+          version: "100.20.1"
 
       - name: Dump and Compress MongoDB
         env:
