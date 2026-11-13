@@ -81,8 +81,8 @@ export function run() {
     res.locals.ownerHash = createHash('sha256').update(key).digest('hex');
     next();
   };
-  app.get('/projects/share/:id', wrap(async (req, res) => {
-    const project = await service.projects.get(String(req.params.id));
+  app.get('/projects/share/:shareId', wrap(async (req, res) => {
+    const project = await service.projects.get(String(req.params.shareId));
     if (!project) {
       res.status(404).json({ message: 'Shared place not found' });
       return;
