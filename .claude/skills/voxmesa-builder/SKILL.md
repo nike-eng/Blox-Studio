@@ -105,6 +105,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/rbxlx-serializer/luau-lite.spec.ts
 - ./blox-studio/rbxlx-serializer/luau-lite.ts
 - ./blox-studio/rbxlx-serializer/materials.ts
+- ./blox-studio/rbxlx-serializer/obby-scripts.ts
 - ./blox-studio/rbxlx-serializer/obby-template.ts
 - ./blox-studio/rbxlx-serializer/place-factory.ts
 - ./blox-studio/rbxlx-serializer/place-types.ts
