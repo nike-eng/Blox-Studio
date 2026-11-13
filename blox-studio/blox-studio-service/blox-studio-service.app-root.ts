@@ -2,13 +2,24 @@ import express from 'express';
 import { createHash } from 'node:crypto';
 import { BloxStudioService } from "./blox-studio-service.js";
 import { handleRpc, type McpStore } from "./mcp.js";
+import multer from 'multer';
+import { createClient } from '@supabase/supabase-js';
 
 export function run() {
   const app = express();
   const service = BloxStudioService.from();
   const port = process.env.PORT || 3000;
   const ready = service.init().catch((err) => console.error('Failed to init storage', err));
+  const supabase = createClient(
+    process.env.SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  );
 
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB cap to protect Render's free RAM
+  });
+  
   // Browser access from another website (for example the Cloudflare-hosted web app).
   // Set CORS_ORIGIN to that site's address; separate several with commas. Without it, no other site is allowed.
   const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean);
@@ -25,7 +36,12 @@ export function run() {
     if (req.method === 'OPTIONS') { res.status(204).end(); return; }
     next();
   });
-    app.get('/ping', (_req, res) => {
+      app.get('/ping', async (_req, res) => {
+    try {
+      await supabase.storage.from('Uploads').list('', { limit: 1 });
+    } catch {
+      // Ignore storage ping errors so Render uptime check always succeeds
+    }
     res.status(200).send('pong');
   });
 
@@ -49,6 +65,29 @@ export function run() {
   };
   app.use('/projects', requireOwner);
   app.use('/mcp-link', requireOwner);
+  app.post('/upload', requireOwner, upload.single('file'), wrap(async (req, res) => {
+  if (!req.file) {
+      res.status(400).json({ message: 'No file provided' });
+      return;
+    }
+
+    const safeName = `${ownerOf(res)}/${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+
+    const { error } = await supabase.storage
+      .from('Uploads')
+      .upload(safeName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false,
+      });
+
+    if (error) throw new Error(error.message);
+
+    const { data } = supabase.storage
+      .from('Uploads')
+      .getPublicUrl(safeName);
+
+    res.json({ url: data.publicUrl });
+  }));
 
   // Small in-memory rate limiter: at most `max` calls per minute for one key.
   const hits = new Map<string, number[]>();
