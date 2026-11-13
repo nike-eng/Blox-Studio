@@ -4,9 +4,27 @@ import { BloxStudioService } from "./blox-studio-service.js";
 import { handleRpc, type McpStore } from "./mcp.js";
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
+import rateLimit from 'express-rate-limit';
 
 export function run() {
   const app = express();
+  app.set('trust proxy', 1);
+
+  const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 15, // Max 15 file uploads per 15 mins per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many uploads. Please wait a few minutes and try again.' },
+  });
+
+  const writeLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 60, // Max 60 project saves/creates per 15 mins per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Saving too fast. Please wait a moment.' },
+  });
   const service = BloxStudioService.from();
   const port = process.env.PORT || 3000;
   const ready = service.init().catch((err) => console.error('Failed to init storage', err));
@@ -63,9 +81,9 @@ export function run() {
     res.locals.ownerHash = createHash('sha256').update(key).digest('hex');
     next();
   };
-  app.use('/projects', requireOwner);
+  app.use('/projects', writeLimiter, requireOwner);
   app.use('/mcp-link', requireOwner);
-  app.post('/upload', requireOwner, upload.single('file'), wrap(async (req, res) => {
+  app.post('/upload', uploadLimiter, requireOwner, upload.single('file'), wrap(async (req, res) => {
   if (!req.file) {
       res.status(400).json({ message: 'No file provided' });
       return;
