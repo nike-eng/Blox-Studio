@@ -81,6 +81,20 @@ export function run() {
     res.locals.ownerHash = createHash('sha256').update(key).digest('hex');
     next();
   };
+  app.get('/projects/share/:id', wrap(async (req, res) => {
+    const project = await service.projects.get(String(req.params.id));
+    if (!project) {
+      res.status(404).json({ message: 'Shared place not found' });
+      return;
+    }
+    res.json({
+      id: project.id,
+      name: project.name,
+      instances: project.instances,
+      updatedAt: project.updatedAt,
+      readOnly: true,
+    });
+  }));
   app.use('/projects', writeLimiter, requireOwner);
   app.use('/mcp-link', requireOwner);
   app.post('/upload', uploadLimiter, requireOwner, upload.single('file'), wrap(async (req, res) => {
