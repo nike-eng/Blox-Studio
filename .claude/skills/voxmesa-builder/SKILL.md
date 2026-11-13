@@ -22,6 +22,11 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - app.use('/projects', writeLimiter, requireOwner);
 - app.use('/mcp-link', requireOwner);
 - app.post('/upload', uploadLimiter, requireOwner, upload.single('file'), wrap(async (req, res) => {
+- app.post('/auth/email', wrap(async (req, res) => {
+- app.post('/auth/refresh', wrap(async (req, res) => {
+- app.get('/account', requireOwner, wrap(async (_req, res) => {
+- app.get('/account/guest', requireOwner, wrap(async (req, res) => {
+- app.post('/account/claim', requireOwner, wrap(async (req, res) => {
 - app.get('/', (_req, res) => { res.json({ message: 'VoxMesa service' }); });
 - app.get('/roblox/status', (_req, res) => {
 - app.get('/projects', wrap(async (_req, res) => {
@@ -40,7 +45,10 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 
 ## 3. Repository File Map (Auto-Extracted)
 - ./AGENTS.md
+- ./blox-studio/blox-studio-app/account-card.tsx
 - ./blox-studio/blox-studio-app/ai-link.tsx
+- ./blox-studio/blox-studio-app/auth-session.spec.ts
+- ./blox-studio/blox-studio-app/auth-session.ts
 - ./blox-studio/blox-studio-app/base.module.css
 - ./blox-studio/blox-studio-app/blox-studio-app.app-root.tsx
 - ./blox-studio/blox-studio-app/blox-studio-app.bit-app.ts
@@ -76,6 +84,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-app/script-editor.tsx
 - ./blox-studio/blox-studio-app/server.app-root.tsx
 - ./blox-studio/blox-studio-app/sky-dome.tsx
+- ./blox-studio/blox-studio-app/studio-api.spec.ts
 - ./blox-studio/blox-studio-app/studio-api.ts
 - ./blox-studio/blox-studio-app/studio-chrome.module.css
 - ./blox-studio/blox-studio-app/studio-chrome.tsx
@@ -89,6 +98,8 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-app/vite.config.js
 - ./blox-studio/blox-studio-platform/blox-studio-platform.bit-app.tsx
 - ./blox-studio/blox-studio-platform/index.ts
+- ./blox-studio/blox-studio-service/auth.spec.ts
+- ./blox-studio/blox-studio-service/auth.ts
 - ./blox-studio/blox-studio-service/blox-studio-service.app-root.ts
 - ./blox-studio/blox-studio-service/blox-studio-service.bit-app.tsx
 - ./blox-studio/blox-studio-service/blox-studio-service.docs.mdx
