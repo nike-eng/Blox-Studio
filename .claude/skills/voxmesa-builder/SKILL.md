@@ -18,6 +18,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - app.get('/ping', async (_req, res) => {
 - app.use(express.json({ limit: '20mb' }));
 - app.use(async (_req, _res, next) => { await ready; next(); });
+- app.get('/projects/share/:id', wrap(async (req, res) => {
 - app.use('/projects', writeLimiter, requireOwner);
 - app.use('/mcp-link', requireOwner);
 - app.post('/upload', uploadLimiter, requireOwner, upload.single('file'), wrap(async (req, res) => {
