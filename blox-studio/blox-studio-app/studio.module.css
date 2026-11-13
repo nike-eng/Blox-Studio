@@ -186,3 +186,14 @@
 .checklist li { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.85rem; color: #cfd3de; line-height: 1.35; }
 .checklist li[data-ok='false'] { color: #f0d78a; }
 .checkMark { flex-shrink: 0; width: 1.2rem; text-align: center; }
+
+/* ---- More room for the Explorer (it lists every Roblox service now) ---- */
+.sidebar > div:first-child { flex: 3 1 0; }
+.sidebar > div:last-child { flex: 2 1 0; }
+@media (min-width: 1101px) {
+  .sidebar { width: 340px; }
+}
+@media (max-width: 767px) {
+  .sidebar { height: calc(var(--app-h, 100vh) * 0.7); }
+  .sidebar > div:first-child, .sidebar > div:last-child { flex: 1 1 0; }
+}
