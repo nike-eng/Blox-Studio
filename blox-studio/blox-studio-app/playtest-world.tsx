@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
   RigidBody, CuboidCollider, ConvexHullCollider, BallCollider, CylinderCollider, CapsuleCollider,
   useBeforePhysicsStep, useRapier, type RapierRigidBody, type RapierCollider,
 } from '@react-three/rapier';
-import type { PlaceInstance, Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
-import { PartVisual, WEDGE_POINTS, CORNER_WEDGE_POINTS } from './part-visual.js';
+import { PART_CLASSES, type GameRuntime, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import { DEG, PartVisual, WEDGE_POINTS, CORNER_WEDGE_POINTS } from './part-visual.js';
 import { PlaytestAvatar, type AvatarAnim } from './playtest-avatar.js';
 import { ParticleBurst, type Burst } from './particle-burst.js';
-import { ROBLOX, buildRuntime, spawnPointOn, touches, type PlaySession, type RuntimePart } from './playtest-runtime.js';
+import { ROBLOX, buildRuntime, runtimePart, spawnPointOn, touches, type PlaySession, type RuntimePart } from './playtest-runtime.js';
 
 /**
  * Player input, written by keyboard and touch controls.
@@ -24,6 +24,9 @@ export type PlayEvent =
   | { type: 'died' }
   | { type: 'finish'; time: number }
   | { type: 'jumpPad' };
+
+/** Things scripts changed since the last physics step; the 3D world drains this queue every step. */
+export type WorldQueue = { changes: Map<string, Set<string>>; added: PlaceInstance[]; removed: string[] };
 
 /** Per-frame updater, mounted only for parts that animate (moving non-solid parts, fading tiles). */
 function PartAnimator({ part }: { part: RuntimePart }) {
@@ -105,7 +108,10 @@ function RuntimePartView({ part }: { part: RuntimePart }) {
  * Props for {@link PlaytestWorld}.
  */
 export type PlaytestWorldProps = {
-  instances: PlaceInstance[];
+  /** The running scripts and the live copy of the place they work on. */
+  runtime: GameRuntime;
+  /** Changes made by scripts, waiting to be shown. */
+  queue: MutableRefObject<WorldQueue>;
   input: MutableRefObject<PlayInput>;
   session: MutableRefObject<PlaySession>;
   onEvent: (event: PlayEvent) => void;
@@ -121,8 +127,10 @@ const UP = new THREE.Vector3(0, 1, 0);
  * disappearing tiles, kill bricks, jump pads, checkpoints, finish line and a collision-aware
  * third-person camera.
  */
-export function PlaytestWorld({ instances, input, session, onEvent, playerPos }: PlaytestWorldProps) {
-  const parts = useMemo(() => buildRuntime(instances), [instances]);
+export function PlaytestWorld({ runtime, queue, input, session, onEvent, playerPos }: PlaytestWorldProps) {
+  const baseParts = useMemo(() => buildRuntime(Array.from(runtime.nodes.values())), [runtime]);
+  const [extra, setExtra] = useState<RuntimePart[]>([]);
+  const parts = useMemo(() => (extra.length ? baseParts.concat(extra) : baseParts), [baseParts, extra]);
   const byId = useMemo(() => new Map(parts.map((p) => [p.inst.id, p])), [parts]);
   const interactive = useMemo(() => parts.filter((p) => (p.inst.props.behavior && p.inst.props.behavior !== 'none') || p.inst.className === 'TrussPart'), [parts]);
   const movers = useMemo(() => parts.filter((p) => p.inst.props.motion === 'move' || p.inst.props.motion === 'spin'), [parts]);
@@ -144,6 +152,10 @@ export function PlaytestWorld({ instances, input, session, onEvent, playerPos }:
   const clock = useRef(0);
   const deadUntil = useRef(0);
   const padCooldown = useRef(0);
+  const touching = useRef(new Set<string>());
+  const ownMats = useRef(new WeakMap<RuntimePart, THREE.Material[]>());
+  const baseHalf = useRef(new WeakMap<RuntimePart, THREE.Vector3>());
+  const sizeWarned = useRef(false);
   // Roblox default camera: 12.5 studs behind, slightly above.
   const cam = useRef({ yaw: 0, pitch: 0.3, dist: 12.5, dragging: false, lx: 0, ly: 0 });
   const bursts = useRef<Burst[]>([]);
@@ -201,8 +213,73 @@ export function PlaytestWorld({ instances, input, session, onEvent, playerPos }:
 
   const respawnPoint = () => spawnPointOn(checkpoints.get(session.current.stage) || spawn);
 
+  /** Own copies of a part's materials, so a color change never touches other parts that share them. */
+  const materialsOf = (part: RuntimePart): THREE.MeshStandardMaterial[] => {
+    let m = ownMats.current.get(part);
+    if (!m && part.group) {
+      m = [];
+      part.group.traverse((o) => {
+        const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        if (mat && !Array.isArray(mat)) { const c = mat.clone(); (o as THREE.Mesh).material = c; m!.push(c); }
+      });
+      ownMats.current.set(part, m);
+    }
+    return (m || []) as THREE.MeshStandardMaterial[];
+  };
+
+  /** Shows a property a script changed on a part. */
+  const applyChange = (part: RuntimePart, key: string) => {
+    const p = part.inst.props; const g = part.group; const b = part.body;
+    if (key === 'position') {
+      const v = (p.position || [0, 0, 0]) as Vec3;
+      part.pos.set(v[0], v[1], v[2]); part.origin.copy(part.pos);
+      if (b) { b.setTranslation({ x: v[0], y: v[1], z: v[2] }, true); b.setNextKinematicTranslation({ x: v[0], y: v[1], z: v[2] }); } else if (g) g.position.copy(part.pos);
+    } else if (key === 'rotation') {
+      const r = (p.rotation || [0, 0, 0]) as Vec3;
+      part.baseQuat.setFromEuler(new THREE.Euler(r[0] * DEG, r[1] * DEG, r[2] * DEG, 'XYZ'));
+      part.quat.copy(part.baseQuat); part.invQuat.copy(part.quat).invert();
+      if (b) { b.setRotation(part.quat, true); b.setNextKinematicRotation(part.quat); } else if (g) g.quaternion.copy(part.quat);
+    } else if (key === 'color') {
+      materialsOf(part).forEach((m) => { if (m.color) m.color.set(p.color || '#a3a2a5'); });
+    } else if (key === 'transparency') {
+      const t = p.transparency ?? 0;
+      materialsOf(part).forEach((m) => { m.transparent = t > 0; m.opacity = 1 - t; m.needsUpdate = true; });
+      if (g) g.visible = t < 1;
+    } else if (key === 'canCollide') {
+      part.solid = p.canCollide !== false;
+      b?.setEnabled(part.solid);
+    } else if (key === 'size' && g) {
+      const s = (p.size || [4, 1, 2]) as Vec3;
+      if (!baseHalf.current.has(part)) baseHalf.current.set(part, part.half.clone());
+      const base = baseHalf.current.get(part)!;
+      part.half.set(s[0] / 2, s[1] / 2, s[2] / 2);
+      g.scale.set(part.half.x / base.x, part.half.y / base.y, part.half.z / base.z);
+      if (!sizeWarned.current) { sizeWarned.current = true; runtime.out('warn', 'Size changes from scripts move the picture but not the physics yet.'); }
+    }
+  };
+
+  /** Applies what scripts did since the last step: new parts, removed parts, changed properties. */
+  const drainScriptChanges = () => {
+    const q = queue.current;
+    if (q.added.length) {
+      const add = q.added.splice(0).filter((i) => PART_CLASSES.includes(i.className) && runtime.rootOf(i).id === 'Workspace').map(runtimePart);
+      if (add.length) setExtra((e) => e.concat(add));
+    }
+    if (q.removed.length) {
+      q.removed.splice(0).forEach((id) => {
+        const part = byId.get(id);
+        if (part) { part.gone = true; part.solid = false; part.body?.setEnabled(false); if (part.group) part.group.visible = false; runtime.touchWatch.delete(id); touching.current.delete(id); }
+      });
+    }
+    q.changes.forEach((keys, id) => {
+      const part = byId.get(id);
+      if (part) { if (!part.gone) keys.forEach((k) => applyChange(part, k)); q.changes.delete(id); } else if (!runtime.nodes.has(id)) q.changes.delete(id);
+    });
+  };
+
   const die = (at: THREE.Vector3) => {
     if (anim.current.dead) return;
+    runtime.characterDied();
     anim.current.dead = true;
     deadUntil.current = clock.current + 1.6;
     session.current.deaths += 1;
@@ -217,6 +294,8 @@ export function PlaytestWorld({ instances, input, session, onEvent, playerPos }:
     const dt = world.timestep;
     clock.current += dt;
     const t = clock.current;
+    drainScriptChanges();
+    runtime.step(dt);
 
     // Moving / spinning parts.
     movers.forEach((part) => {
@@ -259,16 +338,39 @@ export function PlaytestWorld({ instances, input, session, onEvent, playerPos }:
         vy.current = 0;
         anim.current.dead = false;
         cam.current.yaw = 0;
+        runtime.characterRespawned();
       }
       return;
     }
+    const ch = runtime.char;
+    ch.pos[0] = pos.x; ch.pos[1] = pos.y; ch.pos[2] = pos.z;
+    // Scripts that moved or pushed the character (HumanoidRootPart.CFrame / Position / AssemblyLinearVelocity).
+    if (ch.teleport) {
+      const [tx, ty, tz] = ch.teleport; ch.teleport = null;
+      b.setTranslation({ x: tx, y: ty, z: tz }, true); b.setNextKinematicTranslation({ x: tx, y: ty, z: tz });
+      pos.set(tx, ty, tz); vy.current = 0;
+    }
+    if (ch.velocity) { vy.current = ch.velocity[1]; ch.velocity = null; }
+    if (!ch.alive || ch.respawn) { die(pos); return; }
     if (input.current.reset) { input.current.reset = false; die(pos); return; }
     if (pos.y < killY) { die(pos); return; }
 
     // Touch gameplay.
     const feet = S.feet.set(pos.x, pos.y - ROBLOX.halfHeight + 0.4, pos.z);
+    // Parts that scripts listen to with Touched / TouchEnded.
+    if (runtime.touchWatch.size || touching.current.size) {
+      const now = new Set<string>();
+      runtime.touchWatch.forEach((id) => {
+        const part = byId.get(id);
+        if (part && !part.gone && (touches(part, feet, 0.75) || touches(part, pos, 1.2))) now.add(id);
+      });
+      now.forEach((id) => { if (!touching.current.has(id)) runtime.touch(id); });
+      touching.current.forEach((id) => { if (!now.has(id)) runtime.touchEnded(id); });
+      touching.current = now;
+    }
     let climbing = false;
     for (const part of interactive) {
+      if (part.gone) continue;
       if (part.inst.className === 'TrussPart') {
         if (touches(part, pos, 1.6)) climbing = true;
         continue;
@@ -312,11 +414,11 @@ export function PlaytestWorld({ instances, input, session, onEvent, playerPos }:
     } else {
       vy.current -= ROBLOX.gravity * dt;
       if (grounded && vy.current < 0) vy.current = -2;
-      if (input.current.jump && (grounded || climbing) && vy.current <= 0) vy.current = ROBLOX.jumpVelocity;
+      if (input.current.jump && (grounded || climbing) && vy.current <= 0) vy.current = ch.jumpPower;
     }
     vy.current = Math.max(vy.current, -250);
 
-    const desired = S.desired.set(dir.x * ROBLOX.walkSpeed * dt, vy.current * dt, dir.z * ROBLOX.walkSpeed * dt);
+    const desired = S.desired.set(dir.x * ch.walkSpeed * dt, vy.current * dt, dir.z * ch.walkSpeed * dt);
 
     // Ride moving platforms.
     groundRay.origin.x = pos.x; groundRay.origin.y = pos.y - ROBLOX.halfHeight + 0.3; groundRay.origin.z = pos.z;

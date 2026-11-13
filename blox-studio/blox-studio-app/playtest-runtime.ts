@@ -34,6 +34,8 @@ export type RuntimePart = {
   fade: { phase: 'solid' | 'fading' | 'gone' | 'returning'; t: number };
   /** Whether players currently collide with it. */
   solid: boolean;
+  /** A script destroyed it. */
+  gone?: boolean;
 };
 
 /**
@@ -54,27 +56,32 @@ export type PlaySession = {
  */
 export function buildRuntime(instances: PlaceInstance[]): RuntimePart[] {
   const ids = subtreeIds(instances, 'Workspace');
-  return instances
-    .filter((i) => PART_CLASSES.includes(i.className) && ids.has(i.id))
-    .map((inst) => {
-      const p = inst.props;
-      const origin = new THREE.Vector3(...((p.position || [0, 0, 0]) as Vec3));
-      const r = (p.rotation || [0, 0, 0]) as Vec3;
-      const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0] * DEG, r[1] * DEG, r[2] * DEG, 'XYZ'));
-      const s = (p.size || [4, 1, 2]) as Vec3;
-      return {
-        inst,
-        origin,
-        baseQuat,
-        pos: origin.clone(),
-        quat: baseQuat.clone(),
-        invQuat: baseQuat.clone().invert(),
-        half: new THREE.Vector3(s[0] / 2, s[1] / 2, s[2] / 2),
-        delta: new THREE.Vector3(),
-        fade: { phase: 'solid', t: 0 },
-        solid: p.canCollide !== false,
-      } as RuntimePart;
-    });
+  return instances.filter((i) => PART_CLASSES.includes(i.className) && ids.has(i.id)).map(runtimePart);
+}
+
+/**
+ * Builds the runtime state of one part (also used for parts scripts create while playing).
+ * @param inst - a part instance
+ * @returns runtime part
+ */
+export function runtimePart(inst: PlaceInstance): RuntimePart {
+  const p = inst.props;
+  const origin = new THREE.Vector3(...((p.position || [0, 0, 0]) as Vec3));
+  const r = (p.rotation || [0, 0, 0]) as Vec3;
+  const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0] * DEG, r[1] * DEG, r[2] * DEG, 'XYZ'));
+  const s = (p.size || [4, 1, 2]) as Vec3;
+  return {
+    inst,
+    origin,
+    baseQuat,
+    pos: origin.clone(),
+    quat: baseQuat.clone(),
+    invQuat: baseQuat.clone().invert(),
+    half: new THREE.Vector3(s[0] / 2, s[1] / 2, s[2] / 2),
+    delta: new THREE.Vector3(),
+    fade: { phase: 'solid', t: 0 },
+    solid: p.canCollide !== false,
+  } as RuntimePart;
 }
 
 const tmp = new THREE.Vector3();

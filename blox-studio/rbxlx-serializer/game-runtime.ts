@@ -81,7 +81,7 @@ export class Signal implements HostObject {
     switch (k) {
       case 'Connect': case 'Once': return (_s: unknown, fn: unknown) => {
         if (typeof fn !== 'function' && !(fn && typeof fn === 'object')) throw new LuauError('Argument 1 missing or nil (Connect needs a function)');
-        const c = { fn, once: k === 'Once', on: true }; this.conns.push(c);
+        const c = { fn, once: k === 'Once', on: true }; this.conns.push(c); this.rt.noteConnect(this.label);
         return connection(() => { c.on = false; }, () => c.on);
       };
       case 'Wait': return () => new Promise<Multi>((r) => this.waiters.push((a) => r(new Multi(a))));
@@ -362,6 +362,8 @@ const ease = (style: string, dir: string, x: number): number => {
 export class GameRuntime {
   nodes = new Map<string, PlaceInstance>();
   readonly char = new CharacterState();
+  /** Ids of parts a script listens to with Touched / TouchEnded (the 3D world only tests these). */
+  readonly touchWatch = new Set<string>();
   readonly host: Interpreter;
   readonly character: CharacterRef; readonly root: RootRef; readonly humanoid: HumanoidRef;
   localPlayer: PlaceInstance | null = null;
@@ -392,6 +394,8 @@ export class GameRuntime {
     this.host = new Interpreter(opts.out);
     this.character = new CharacterRef(this); this.root = new RootRef(this); this.humanoid = new HumanoidRef(this);
   }
+
+  noteConnect(label: string): void { const m = /^(.*):(Touched|TouchEnded)$/.exec(label); if (m) this.touchWatch.add(m[1]); }
 
   // ---- tree helpers (used by InstanceRef)
   ref(id: string): InstanceRef { let r = this.refs.get(id); if (!r) { r = new InstanceRef(this, id); this.refs.set(id, r); } return r; }

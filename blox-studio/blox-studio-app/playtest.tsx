@@ -2,8 +2,8 @@ import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
-import type { PlaceInstance, Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
-import { PlaytestWorld, type PlayEvent, type PlayInput } from './playtest-world.js';
+import { GameRuntime, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import { PlaytestWorld, type PlayEvent, type PlayInput, type WorldQueue } from './playtest-world.js';
 import { SceneEnvironment, type GraphicsQuality } from './scene-environment.js';
 import { ROBLOX, type PlaySession } from './playtest-runtime.js';
 import { TouchControls } from './touch-controls.js';
@@ -25,6 +25,16 @@ const KEYS: Record<string, keyof PlayInput | 'left' | 'right' | 'fwd' | 'back'> 
   KeyW: 'fwd', ArrowUp: 'fwd', KeyS: 'back', ArrowDown: 'back', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', Space: 'jump',
 };
 
+/** Roblox's name for a keyboard key (`Enum.KeyCode.E`, `Enum.KeyCode.One`...). */
+function keyName(code: string): string {
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'][Number(code.slice(5))] ?? code;
+  const map: Record<string, string> = { ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right', Enter: 'Return', ShiftLeft: 'LeftShift', ShiftRight: 'RightShift', ControlLeft: 'LeftControl', ControlRight: 'RightControl', AltLeft: 'LeftAlt', AltRight: 'RightAlt' };
+  return map[code] ?? code;
+}
+
+type OutLine = { id: number; kind: string; text: string };
+
 const QUALITY_KEY = 'blox-studio:graphics-quality';
 const DPR: Record<GraphicsQuality, number> = { low: 0.85, medium: 1.25, high: 1.75 };
 
@@ -44,6 +54,8 @@ function FpsProbe({ fps }: { fps: MutableRefObject<number> }) {
 
 type SceneProps = {
   instances: PlaceInstance[];
+  runtime: GameRuntime;
+  queue: MutableRefObject<WorldQueue>;
   input: MutableRefObject<PlayInput>;
   session: MutableRefObject<PlaySession>;
   onEvent: (e: PlayEvent) => void;
@@ -54,7 +66,7 @@ type SceneProps = {
 /**
  * The 3D scene. Memoized so HUD updates (timer, banners) never re-reconcile the scene graph.
  */
-const PlaytestScene = memo(function PlaytestScene({ instances, input, session, onEvent, quality, fps }: SceneProps) {
+const PlaytestScene = memo(function PlaytestScene({ instances, runtime, queue, input, session, onEvent, quality, fps }: SceneProps) {
   const playerPos = useRef(new THREE.Vector3());
   const lighting = useMemo(() => instances.find((i) => i.className === 'Lighting'), [instances]);
   const pointLights = useMemo(() => {
@@ -77,7 +89,7 @@ const PlaytestScene = memo(function PlaytestScene({ instances, input, session, o
       <FpsProbe fps={fps} />
       <Suspense fallback={null}>
         <Physics gravity={[0, -ROBLOX.gravity, 0]} timeStep={1 / 60} interpolate>
-          <PlaytestWorld instances={instances} input={input} session={session} onEvent={onEvent} playerPos={playerPos} />
+          <PlaytestWorld runtime={runtime} queue={queue} input={input} session={session} onEvent={onEvent} playerPos={playerPos} />
         </Physics>
       </Suspense>
     </Canvas>
@@ -85,7 +97,7 @@ const PlaytestScene = memo(function PlaytestScene({ instances, input, session, o
 });
 
 /** Stage/timer card and Roblox-style leaderboard; owns the 10 Hz timer so only it re-renders. */
-function Hud({ session, playerName, version, fps, showFps }: { session: MutableRefObject<PlaySession>; playerName: string; version: number; fps: MutableRefObject<number>; showFps: boolean }) {
+function Hud({ session, playerName, version, fps, showFps, runtime }: { session: MutableRefObject<PlaySession>; playerName: string; version: number; fps: MutableRefObject<number>; showFps: boolean; runtime: GameRuntime | null }) {
   const [, tick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => tick((n) => n + 1), 100);
@@ -93,6 +105,9 @@ function Hud({ session, playerName, version, fps, showFps }: { session: MutableR
   }, []);
   const s = session.current;
   const elapsed = ((s.finishTime ?? performance.now()) - s.startTime) / 1000;
+  // A game that makes a `leaderstats` folder shows its own columns; otherwise the built-in stage counter.
+  const stats = runtime?.leaderstats() ?? [];
+  const cols = stats.length ? stats.map((c) => ({ name: c.name, value: String(c.value ?? '') })) : [{ name: 'Stage', value: String(s.stage) }];
   return (
     <>
       <div className={styles.hudCard} data-version={version}>
@@ -101,8 +116,8 @@ function Hud({ session, playerName, version, fps, showFps }: { session: MutableR
         <div className={styles.deaths}>☠ {s.deaths}</div>
       </div>
       <div className={styles.leaderboard}>
-        <div className={styles.lbHead}><span>Players</span><span>Stage</span></div>
-        <div className={styles.lbRow}><span className={styles.lbName}>{playerName}</span><span>{s.stage}</span></div>
+        <div className={styles.lbHead}><span>Players</span>{cols.map((c) => <span key={c.name}>{c.name}</span>)}</div>
+        <div className={styles.lbRow}><span className={styles.lbName}>{playerName}</span>{cols.map((c) => <span key={c.name}>{c.value}</span>)}</div>
         {showFps && <div className={styles.fps}>{fps.current} FPS</div>}
       </div>
     </>
@@ -131,6 +146,36 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
   const autoRef = useRef(!(savedQuality === 'low' || savedQuality === 'medium' || savedQuality === 'high'));
   const [limited, setLimited] = useState(false);
   const [showFps, setShowFps] = useState(true);
+
+  // The scripts of this run. Created in an effect (not during render) so Stop / Restart always shut the old scripts down.
+  const queue = useRef<WorldQueue>({ changes: new Map(), added: [], removed: [] });
+  const [run, setRun] = useState<{ rt: GameRuntime; key: number } | null>(null);
+  const runRef = useRef<GameRuntime | null>(null);
+  const [lines, setLines] = useState<OutLine[]>([]);
+  const [outOpen, setOutOpen] = useState(false);
+  const buffer = useRef<OutLine[]>([]);
+  useEffect(() => {
+    queue.current = { changes: new Map(), added: [], removed: [] };
+    buffer.current = [];
+    setLines([]);
+    let n = 0;
+    const rt = new GameRuntime(instances, {
+      out: (kind, text) => { n += 1; buffer.current.push({ id: n, kind, text }); if (kind === 'error') setOutOpen(true); },
+      onChange: (i, k) => { const m = queue.current.changes; const set = m.get(i.id) || new Set<string>(); set.add(k); m.set(i.id, set); },
+      onAdded: (i) => { queue.current.added.push(i); },
+      onRemoved: (id) => { queue.current.removed.push(id); },
+    });
+    runRef.current = rt;
+    setRun((r) => ({ rt, key: (r?.key ?? 0) + 1 }));
+    void rt.start();
+    // Output lines arrive in bursts; show them a few times a second instead of re-rendering for every print.
+    const flush = setInterval(() => {
+      if (!buffer.current.length) return;
+      const next = buffer.current.splice(0);
+      setLines((l) => l.concat(next).slice(-200));
+    }, 150);
+    return () => { clearInterval(flush); rt.stop(); if (runRef.current === rt) runRef.current = null; };
+  }, [instances, runKey]);
 
   const changeQuality = (q: GraphicsQuality) => {
     autoRef.current = false;
@@ -179,6 +224,7 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.code === 'Escape') { setMenu((m) => !m); return; }
+      if (!e.repeat) runRef.current?.keyEvent(keyName(e.code), true);
       if (e.code === 'KeyR') { input.current.reset = true; return; }
       const k = KEYS[e.code];
       if (!k) return;
@@ -187,7 +233,7 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
       setHelp(false);
       syncKeys();
     };
-    const up = (e: KeyboardEvent) => { const k = KEYS[e.code]; if (k) { held.current.delete(k); syncKeys(); } };
+    const up = (e: KeyboardEvent) => { runRef.current?.keyEvent(keyName(e.code), false); const k = KEYS[e.code]; if (k) { held.current.delete(k); syncKeys(); } };
     const blur = () => { held.current.clear(); syncKeys(); };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
@@ -221,16 +267,29 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
 
   return (
     <div className={styles.overlay}>
-      <PlaytestScene key={runKey} instances={instances} input={input} session={session} onEvent={onEvent} quality={quality} fps={fps} />
+      {run && <PlaytestScene key={run.key} instances={instances} runtime={run.rt} queue={queue} input={input} session={session} onEvent={onEvent} quality={quality} fps={fps} />}
 
       <div className={styles.topLeft}>
         <button className={styles.menuBtn} onClick={() => setMenu((m) => !m)} aria-label="Menu (Esc)" title="Menu (Esc)">
           <span className={styles.menuIcon} aria-hidden="true"><i /><i /><i /></span>
         </button>
         <button className={styles.stopBtn} onClick={onStop} title="Stop playtest"><span className={styles.stopIcon} /> Stop</button>
+        <button className={styles.outBtn} onClick={() => setOutOpen((o) => !o)} title="Output: what your scripts print" data-errors={lines.some((l) => l.kind === 'error')}>
+          Output{lines.length ? ` (${lines.length})` : ''}
+        </button>
       </div>
 
-      <Hud session={session} playerName={playerName} version={version} fps={fps} showFps={showFps} />
+      {outOpen && (
+        <div className={styles.outPanel} role="log" aria-label="Output">
+          <div className={styles.outHead}><b>Output</b><span><button onClick={() => setLines([])}>Clear</button><button onClick={() => setOutOpen(false)} aria-label="Close output">✕</button></span></div>
+          <div className={styles.outBody}>
+            {lines.length === 0 && <div className={styles.outEmpty}>Nothing yet. Scripts that call <code>print()</code> show up here.</div>}
+            {lines.map((l) => <div key={l.id} className={`${styles.outLine} ${styles[`out_${l.kind}`] || ''}`}>{l.text}</div>)}
+          </div>
+        </div>
+      )}
+
+      <Hud session={session} playerName={playerName} version={version} fps={fps} showFps={showFps} runtime={run?.rt ?? null} />
 
       {banner && (
         <div key={banner.key} className={`${styles.banner} ${styles[banner.tone]}`}>{banner.text}</div>
