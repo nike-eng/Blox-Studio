@@ -296,9 +296,7 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
         onPlay={() => setPlaying(editor.instances)}
         onExport={async () => {
           if (!(await save())) return; // the download comes from the saved copy
-          const a = document.createElement('a');
-          a.href = studioApi.exportUrl(project.id);
-          document.body.appendChild(a); a.click(); a.remove();
+          await studioApi.downloadExport(project.id, `${project.name || 'place'}.rbxlx`);
         }}
         onPublish={() => setDialog('publish')}
         onSettings={() => setDialog('settings')}

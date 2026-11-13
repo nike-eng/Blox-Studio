@@ -1,10 +1,10 @@
 import express from 'express';
-import { createHash } from 'node:crypto';
 import { BloxStudioService } from "./blox-studio-service.js";
 import { handleRpc, type McpStore } from "./mcp.js";
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import rateLimit from 'express-rate-limit';
+import { cachedVerifier, friendlyAuthError, guestOwnerHash, looksLikeEmail, makeLimiter, resolveCaller, safeRedirect, type AuthUser } from './auth.js';
 
 export function run() {
   const app = express();
@@ -46,8 +46,9 @@ export function run() {
     if (origin && allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Headers', 'content-type, x-owner-key');
+      res.setHeader('Access-Control-Allow-Headers', 'content-type, x-owner-key, authorization');
       res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Expose-Headers', 'content-disposition');
       res.setHeader('Access-Control-Max-Age', '600');
       res.setHeader('Vary', 'Origin');
     }
@@ -75,10 +76,25 @@ export function run() {
   // Ownership: every request to /projects must carry the browser's private owner key.
   // Only the hash is stored, and a project can only be touched by the key that owns it.
   const ownerOf = (res: express.Response) => res.locals.ownerHash as string;
-  const requireOwner: express.RequestHandler = (req, res, next) => {
-    const key = String(req.headers['x-owner-key'] || req.query.key || '');
-    if (key.length < 32) { res.status(401).json({ message: 'Open VoxMesa in the browser to use your projects.' }); return; }
-    res.locals.ownerHash = createHash('sha256').update(key).digest('hex');
+  // A signed-in person sends their Supabase token; a guest sends the private browser key. Tokens are checked with Supabase.
+  const newAuthClient = () => createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '', { auth: { persistSession: false, autoRefreshToken: false } });
+  const authClient = newAuthClient();
+  const verifyToken = cachedVerifier(async (token): Promise<AuthUser | null> => {
+    const { data, error } = await authClient.auth.getUser(token);
+    // A refusal (bad or expired token) means "not signed in"; a hiccup (rate limit, outage) must not sign anyone out.
+    if (error) { if (typeof error.status === 'number' && error.status >= 400 && error.status < 500 && error.status !== 429) return null; throw error; }
+    return data.user ? { id: data.user.id, email: data.user.email || '' } : null;
+  });
+  const requireOwner: express.RequestHandler = async (req, res, next) => {
+    let caller;
+    try {
+      caller = await resolveCaller({ authorization: req.headers.authorization, ownerKey: String(req.headers['x-owner-key'] || req.query.key || '') }, verifyToken);
+    } catch {
+      res.status(503).json({ message: 'Sign-in is busy right now. Try again in a moment.' }); return;
+    }
+    if (!caller.ok) { res.status(caller.status).json({ message: caller.message }); return; }
+    res.locals.ownerHash = caller.ownerHash;
+    res.locals.user = caller.user;
     next();
   };
   app.get('/projects/share/:shareId', wrap(async (req, res) => {
@@ -136,6 +152,46 @@ export function run() {
       res.status(404).json({ message: 'Project not found' });
     } catch (err) { next(err); }
   });
+
+  // ---- Accounts: sign in with an email link (Supabase). Tokens are never stored here; Supabase checks them.
+  const emailLimit = makeLimiter(3, 10 * 60_000);
+  const ipLimit = makeLimiter(15, 10 * 60_000);
+  app.post('/auth/email', wrap(async (req, res) => {
+    const { email, redirectTo } = req.body || {};
+    if (!looksLikeEmail(email)) { res.status(400).json({ message: 'Type a real email address.' }); return; }
+    if (!safeRedirect(redirectTo, req.headers.origin, allowedOrigins)) { res.status(400).json({ message: 'This site is not allowed to start sign-in.' }); return; }
+    if (!emailLimit(email.toLowerCase()) || !ipLimit(req.ip || '')) { res.status(429).json({ message: 'Too many tries. Wait a few minutes and try again.' }); return; }
+    const { error } = await newAuthClient().auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: true } });
+    if (error) { res.status(error.status === 429 ? 429 : 400).json({ message: friendlyAuthError(error.message) }); return; }
+    res.json({ ok: true });
+  }));
+
+  app.post('/auth/refresh', wrap(async (req, res) => {
+    const token = req.body?.refreshToken;
+    if (typeof token !== 'string' || token.length < 10 || token.length > 2000) { res.status(400).json({ message: 'Missing sign-in token.' }); return; }
+    const { data, error } = await newAuthClient().auth.refreshSession({ refresh_token: token });
+    if (error || !data.session) { res.status(401).json({ message: 'Your sign-in has expired. Please sign in again.' }); return; }
+    const s = data.session;
+    res.json({ accessToken: s.access_token, refreshToken: s.refresh_token, expiresAt: s.expires_at ?? Math.floor(Date.now() / 1000) + s.expires_in });
+  }));
+
+  app.get('/account', requireOwner, wrap(async (_req, res) => {
+    const user = res.locals.user as AuthUser | undefined;
+    res.json({ signedIn: !!user, email: user?.email || '' });
+  }));
+
+  // How many projects are waiting on this browser (made before signing in).
+  app.get('/account/guest', requireOwner, wrap(async (req, res) => {
+    const key = String(req.headers['x-owner-key'] || '');
+    res.json({ count: key.length >= 32 ? await service.projects.countOwned(guestOwnerHash(key)) : 0 });
+  }));
+
+  // Moves this browser's projects into the signed-in account. Nothing is deleted.
+  app.post('/account/claim', requireOwner, wrap(async (req, res) => {
+    if (!res.locals.user) { res.status(401).json({ message: 'Sign in first.' }); return; }
+    const key = String(req.headers['x-owner-key'] || '');
+    res.json({ moved: key.length >= 32 ? await service.projects.claim(guestOwnerHash(key), ownerOf(res)) : 0 });
+  }));
 
   app.get('/', (_req, res) => { res.json({ message: 'VoxMesa service' }); });
 

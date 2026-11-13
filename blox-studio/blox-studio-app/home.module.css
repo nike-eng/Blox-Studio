@@ -62,3 +62,16 @@
 }
 
 .disclaimer { margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid #343844; color: #8c93a3; font-size: 0.78rem; line-height: 1.5; }
+
+/* ---- Sign-in card ---- */
+.account { display: flex; flex-direction: column; gap: 0.6rem; margin: 0 0 1.5rem; padding: 1rem 1.1rem; border: 1px solid #343844; border-radius: 14px; background: #20232b; }
+.accountRow { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.accountForm { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.accountForm .nameInput { flex: 1 1 15rem; min-width: 0; }
+.accountNote { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.75rem 0.9rem; border-radius: 10px; background: rgba(0, 162, 255, 0.12); font-size: 0.9rem; }
+.accountActions { display: flex; gap: 0.5rem; }
+.accountBtn { min-height: 44px; padding: 0 1.1rem; border: none; border-radius: 10px; background: #00a2ff; color: #fff; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+.accountBtn:disabled { opacity: 0.6; cursor: default; }
+.accountBtnGhost { min-height: 44px; padding: 0 1rem; border: 1px solid #3a3d46; border-radius: 10px; background: transparent; color: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+.accountLink { border: none; background: none; padding: 0; color: #8ab4f8; font: inherit; text-decoration: underline; cursor: pointer; }
+.accountOk { margin: 0; color: #4ade80; }

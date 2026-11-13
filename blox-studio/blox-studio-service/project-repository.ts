@@ -35,6 +35,8 @@ const ProjectSchema = new Schema(
     universeId: String,
     placeId: String,
     ownerHash: String,
+    /** Set when a guest's projects were moved into an account, so the move can be undone by hand. */
+    claimedFrom: String,
     publishHistory: { type: [Schema.Types.Mixed], default: [] },
   },
   { timestamps: true, minimize: false }
@@ -144,6 +146,25 @@ export class ProjectRepository {
     if (!/^[0-9a-f]{64}$/.test(token)) return null;
     const doc = await McpLinkModel.findOne({ tokenHash: sha(token) }).lean();
     return doc ? String(doc.ownerHash) : null;
+  }
+
+  /** How many projects belong to an owner. */
+  async countOwned(ownerHash: string): Promise<number> {
+    return ProjectModel.countDocuments({ ownerHash });
+  }
+
+  /**
+   * Moves a guest's projects into an account. Nothing is deleted: each moved project remembers where it came from.
+   * The guest's AI link comes along only when the account has none of its own.
+   * @param from - guest owner hash
+   * @param to - account owner hash
+   * @returns how many projects moved
+   */
+  async claim(from: string, to: string): Promise<number> {
+    if (!from || !to || from === to) return 0;
+    const res = await ProjectModel.updateMany({ ownerHash: from }, { $set: { ownerHash: to, claimedFrom: from } });
+    if ((await McpLinkModel.countDocuments({ ownerHash: to })) === 0) await McpLinkModel.updateMany({ ownerHash: from }, { $set: { ownerHash: to } });
+    return res.modifiedCount ?? 0;
   }
 
   /** Deletes a project. */

@@ -1,4 +1,5 @@
 import type { PlaceInstance, PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import { decodeEmail, isExpiring, loadSession, saveSession, type Session } from './auth-session.js';
 
 /**
  * Publish history entry.
@@ -75,7 +76,42 @@ export class ApiError extends Error {
   get temporary(): boolean { return this.status === 0 || this.status >= 500 || this.status === 429; }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+type Renewal = { session: Session } | { signedOut: true } | { later: true };
+let renewing: Promise<Renewal> | null = null;
+
+/** Gets a fresh sign-in token from the server (one at a time). Only a refusal from the server signs the person out; a bad connection never does. */
+function renew(): Promise<Renewal> {
+  if (!renewing) renewing = doRenew().finally(() => { renewing = null; });
+  return renewing;
+}
+
+async function doRenew(): Promise<Renewal> {
+  const s = loadSession();
+  if (!s) return { signedOut: true };
+  try {
+    const res = await fetch(`${serviceUrl()}/auth/refresh`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken: s.refreshToken }) });
+    if (res.status === 400 || res.status === 401) { saveSession(null); return { signedOut: true }; }
+    if (!res.ok) return { later: true };
+    const j = (await res.json()) as { accessToken: string; refreshToken: string; expiresAt: number };
+    const next: Session = { accessToken: j.accessToken, refreshToken: j.refreshToken, expiresAt: j.expiresAt, email: decodeEmail(j.accessToken) || s.email };
+    saveSession(next);
+    return { session: next };
+  } catch { return { later: true }; }
+}
+
+/** Headers that say who is asking: the sign-in token when signed in, always the browser key (used to move guest projects into an account). */
+async function authHeaders(): Promise<Record<string, string>> {
+  const h: Record<string, string> = { 'x-owner-key': ownerKey() };
+  let s = loadSession();
+  if (s && isExpiring(s)) {
+    const r = await renew();
+    if ('session' in r) s = r.session; else if ('signedOut' in r) s = null;
+  }
+  if (s) h.Authorization = `Bearer ${s.accessToken}`;
+  return h;
+}
+
+async function request<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
   // The free server sleeps when nobody uses it and can take about a minute to wake up.
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), 75000);
@@ -85,13 +121,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init,
       signal: abort.signal,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'x-owner-key': ownerKey(), ...(init.headers || {}) },
+      headers: { 'Content-Type': 'application/json', ...(await authHeaders()), ...(init.headers || {}) },
     });
   } catch {
     throw new ApiError(abort.signal.aborted ? 'The server took too long to answer.' : 'Could not reach the VoxMesa server. Check your internet connection.', 0);
   } finally {
     clearTimeout(timer);
   }
+  // A token can run out between "is it still good?" and "the server got it": renew once and try again.
+  if (res.status === 401 && !retried && loadSession() && 'session' in (await renew())) return request<T>(path, init, true);
   const text = await res.text().catch(() => '');
   let json: { message?: string } = {};
   try { json = text ? JSON.parse(text) : {}; } catch {
@@ -114,7 +152,7 @@ export const studioApi = {
     const res = await fetch(`${serviceUrl()}/upload`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'x-owner-key': ownerKey() },
+      headers: await authHeaders(),
       body: form,
     });
 
@@ -149,6 +187,29 @@ export const studioApi = {
   createAiLink: () => request<{ token: string }>('/mcp-link', { method: 'POST' }),
   /** Turns the AI link off. */
   revokeAiLink: () => request<{ ok: boolean }>('/mcp-link', { method: 'DELETE' }),
-  /** URL to download the .rbxlx file. */
-  exportUrl: (id: string) => `${serviceUrl()}/projects/${id}/export?key=${ownerKey()}`,
+  /** Downloads the .rbxlx file (sent with the sign-in token, so it works for accounts too). */
+  async downloadExport(id: string, fallbackName = 'place.rbxlx'): Promise<void> {
+    const res = await fetch(`${serviceUrl()}/projects/${id}/export`, { credentials: 'include', headers: await authHeaders() });
+    if (!res.ok) {
+      const j = (await res.json().catch(() => ({}))) as { message?: string };
+      throw new ApiError(j.message || `Export failed (${res.status})`, res.status);
+    }
+    const name = /filename="?([^";]+)"?/i.exec(res.headers.get('content-disposition') || '')?.[1] || fallbackName;
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  },
+  /** Who is signed in on this device (email), or not. */
+  account: () => request<{ signedIn: boolean; email: string }>('/account'),
+  /** Sends a sign-in link to an email address. The link opens the editor back on this site. */
+  startSignIn: (email: string) =>
+    request<{ ok: boolean }>('/auth/email', { method: 'POST', body: JSON.stringify({ email, redirectTo: `${window.location.origin}/projects` }) }),
+  /** How many projects were made on this browser before signing in. */
+  guestProjects: () => request<{ count: number }>('/account/guest'),
+  /** Moves this browser's projects into the signed-in account. */
+  claimGuestProjects: () => request<{ moved: number }>('/account/claim', { method: 'POST' }),
+  /** Signs out on this device only. Projects stay in the account. */
+  signOut: () => saveSession(null),
 };

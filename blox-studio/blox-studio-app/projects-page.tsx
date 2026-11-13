@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { studioApi, type ProjectSummary } from './studio-api.js';
 import { BrandMark } from './brand-mark.js';
+import { AccountCard } from './account-card.js';
 import styles from './home.module.css';
 
 const TEMPLATES: { id: PlaceTemplate; name: string; desc: string; preview: string }[] = [
@@ -44,6 +45,7 @@ export function ProjectsPage() {
         <p>Place parts, write Lua scripts and press Play. When you are ready, export a place file or publish it to your own experience. No install needed.</p>
         <input className={styles.nameInput} placeholder="Name your new place" value={name} onChange={(e) => setName(e.target.value)} />
       </section>
+      <AccountCard onChange={load} />
       <section>
         <h2 className={styles.sectionTitle}>New place</h2>
         <div className={styles.grid}>
