@@ -107,4 +107,67 @@ describe('GameRuntime', () => {
     expect((xml.match(/class="StarterPlayerScripts"/g) || []).length).toBe(1);
     expect((xml.match(/name="Name">BloxClient</g) || []).length).toBe(1);
   });
+
+  it('gives the new obby its rules as editable scripts', () => {
+    const list = createPlaceTemplate('obby');
+    const rules = list.find((i) => i.name === 'ObbyRules')!;
+    const client = list.find((i) => i.name === 'ObbyClient')!;
+    expect(rules.className).toBe('Script'); expect(rules.parentId).toBe('ServerScriptService');
+    expect(client.className).toBe('LocalScript'); expect(client.parentId).toBe('StarterPlayerScripts');
+    expect(list.find((i) => i.id === 'Workspace')!.props.attributes).toEqual({ ScriptedGameplay: true });
+    expect(createPlaceTemplate('baseplate').find((i) => i.id === 'Workspace')!.props.attributes).toBeUndefined();
+  });
+
+  it('runs the obby rules: checkpoint, kill, respawn at checkpoint, jump pad and finish', async () => {
+    const list = createPlaceTemplate('obby');
+    const id = (n: string) => list.find((i) => i.name === n)!.id;
+    const lines: string[] = []; const notes: { title: string; text: string }[] = [];
+    const rt = new GameRuntime(list, { out: (k, t) => lines.push(k === 'print' ? t : `${k}:${t}`), onNotify: (n) => notes.push({ title: n.title, text: n.text }) });
+    expect(rt.scripted).toBe(true);
+    await rt.start(); await sleep(150);
+    expect(lines).toEqual(['Welcome to Sky Islands Obby!']);
+    expect(rt.leaderstats()).toEqual([{ name: 'Stage', value: 1 }]);
+
+    rt.touch(id('Checkpoint2')); await sleep(60);
+    expect(rt.leaderstats()).toEqual([{ name: 'Stage', value: 2 }]);
+    expect(notes).toEqual([{ title: 'Checkpoint!', text: 'Stage 2' }]);
+    rt.touch(id('Checkpoint2')); await sleep(60);
+    expect(notes.length).toBe(1);
+
+    rt.touch(id('LavaPool')); await sleep(60);
+    expect(rt.char.alive).toBe(false);
+    rt.characterRespawned(); await sleep(60);
+    const t = rt.char.teleport!;
+    expect(!!t && Math.abs(t[0]) < 1e-9 && Math.abs(t[1] - 10.7) < 1e-9 && Math.abs(t[2] + 86) < 1e-9).toBeTruthy();
+
+    rt.touch(id('JumpPad')); await sleep(60);
+    expect(rt.char.velocity).toEqual([0, 110, 0]);
+
+    rt.touch(id('Finish')); await sleep(60);
+    expect(notes.length).toBe(2);
+    expect(notes[1].title).toBe('You beat the obby!');
+    expect(notes[1].text).toMatch(/^Time: \d+\.\d seconds$/);
+    rt.touch(id('Finish')); await sleep(60);
+    expect(notes.length).toBe(2);
+    expect(lines.filter((l) => l.startsWith('error') || l.startsWith('warn'))).toEqual([]);
+    rt.stop(); await sleep(80);
+  });
+
+  it('keeps the obby scripts quiet in places without ScriptedGameplay', async () => {
+    const list = createPlaceTemplate('obby');
+    const ws = list.find((i) => i.id === 'Workspace')!; ws.props = { ...ws.props, attributes: undefined };
+    const { rt, lines } = await boot(list);
+    expect(rt.scripted).toBe(false);
+    expect(lines).toEqual(['Welcome to Sky Islands Obby!']);
+    expect(rt.leaderstats()).toEqual([]);
+    rt.stop(); await sleep(80);
+  });
+
+  it('shows Properties → Gameplay settings to scripts as attributes', async () => {
+    const list = place([{ cls: 'Script', parent: 'Workspace', name: 'S', src: 'local p = workspace.Pad\nprint(p:GetAttribute("Behavior"), p:GetAttribute("JumpPower"), p:GetAttribute("Nope"), workspace.Plain:GetAttribute("Behavior"), p:GetAttribute("Own"))' }], [{ name: 'Pad' }, { name: 'Plain' }]);
+    const pad = list.find((i) => i.name === 'Pad')!; pad.props = { ...pad.props, behavior: 'jumpPad', jumpPower: 90, attributes: { Own: 'yes' } };
+    const { rt, lines } = await boot(list);
+    expect(lines).toEqual(['jumpPad\t90\tnil\tnil\tyes']);
+    rt.stop(); await sleep(80);
+  });
 });

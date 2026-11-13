@@ -111,7 +111,7 @@ function Hud({ session, playerName, version, fps, showFps, runtime }: { session:
   return (
     <>
       <div className={styles.hudCard} data-version={version}>
-        <div className={styles.stage}>{s.finishTime !== null ? 'Finished!' : `Stage ${s.stage} / ${s.totalStages}`}</div>
+        {!runtime?.scripted && <div className={styles.stage}>{s.finishTime !== null ? 'Finished!' : `Stage ${s.stage} / ${s.totalStages}`}</div>}
         <div className={styles.timer}>{elapsed.toFixed(1)}s</div>
         <div className={styles.deaths}>☠ {s.deaths}</div>
       </div>
@@ -135,6 +135,7 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
   const fps = useRef(60);
   const [version, setVersion] = useState(0);
   const [banner, setBanner] = useState<{ text: string; tone: string; key: number } | null>(null);
+  const [note, setNote] = useState<{ title: string; text: string; key: number; ms: number } | null>(null);
   const [runKey, setRunKey] = useState(0);
   const [help, setHelp] = useState(true);
   const [menu, setMenu] = useState(false);
@@ -164,6 +165,7 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
       onChange: (i, k) => { const m = queue.current.changes; const set = m.get(i.id) || new Set<string>(); set.add(k); m.set(i.id, set); },
       onAdded: (i) => { queue.current.added.push(i); },
       onRemoved: (id) => { queue.current.removed.push(id); },
+      onNotify: (nt) => setNote({ title: nt.title, text: nt.text, key: Date.now(), ms: Math.max(1500, nt.duration * 1000) }),
     });
     runRef.current = rt;
     setRun((r) => ({ rt, key: (r?.key ?? 0) + 1 }));
@@ -254,9 +256,16 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
     return () => clearTimeout(id);
   }, [banner]);
 
+  useEffect(() => {
+    if (!note) return undefined;
+    const id = setTimeout(() => setNote(null), note.ms);
+    return () => clearTimeout(id);
+  }, [note]);
+
   const restart = () => {
     session.current = { startTime: performance.now(), finishTime: null, stage: 1, totalStages: session.current.totalStages, deaths: 0 };
     setBanner(null);
+    setNote(null);
     setMenu(false);
     setRunKey((k) => k + 1);
   };
@@ -293,6 +302,12 @@ export function Playtest({ instances, onStop, playerName = 'Player1' }: Playtest
 
       {banner && (
         <div key={banner.key} className={`${styles.banner} ${styles[banner.tone]}`}>{banner.text}</div>
+      )}
+      {note && (
+        <div key={note.key} className={styles.toast} role="status">
+          <strong>{note.title}</strong>
+          {note.text && <span>{note.text}</span>}
+        </div>
       )}
       {finished && !menu && (
         <div className={styles.finishCard}>

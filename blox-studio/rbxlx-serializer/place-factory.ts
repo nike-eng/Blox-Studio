@@ -1,6 +1,7 @@
 import type { ClassName, InstanceProps, PlaceInstance } from './place-types.js';
 import { NESTED_SERVICES, SERVICE_CLASSES } from './place-types.js';
 import { buildObby } from './obby-template.js';
+import { OBBY_CLIENT_SOURCE, OBBY_RULES_SOURCE } from './obby-scripts.js';
 
 /**
  * Generates a short random id for an instance.
@@ -111,11 +112,15 @@ export function createPlaceTemplate(template: PlaceTemplate = 'baseplate'): Plac
 
   if (template === 'obby') {
     const items = buildObby(createInstance);
+    // The rules live in scripts; this flag tells VoxMesa's Play mode to run them instead of its built-in rules.
+    const workspace = services.find((i) => i.id === 'Workspace');
+    if (workspace) workspace.props = { ...workspace.props, attributes: { ScriptedGameplay: true } };
+    items.push(createInstance('Script', 'ServerScriptService', { source: OBBY_RULES_SOURCE }, 'ObbyRules'));
+    items.push(createInstance('LocalScript', 'StarterPlayerScripts', { source: OBBY_CLIENT_SOURCE }, 'ObbyClient'));
     items.push(createInstance('Script', 'ServerScriptService', {
       source: [
         '-- Your own server code goes here.',
-        '-- Kill bricks, checkpoints, the finish line, moving platforms and jump pads',
-        '-- are configured per part (Properties → Gameplay) and run automatically.',
+        '-- The course rules (kill bricks, checkpoints, finish, jump pads) are in ObbyRules.',
         'print("Welcome to Sky Islands Obby!")',
         '',
       ].join('\n'),

@@ -130,6 +130,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 export function PlaytestWorld({ runtime, queue, input, session, onEvent, playerPos }: PlaytestWorldProps) {
   const baseParts = useMemo(() => buildRuntime(Array.from(runtime.nodes.values())), [runtime]);
   const [extra, setExtra] = useState<RuntimePart[]>([]);
+  const scripted = runtime.scripted;
   const parts = useMemo(() => (extra.length ? baseParts.concat(extra) : baseParts), [baseParts, extra]);
   const byId = useMemo(() => new Map(parts.map((p) => [p.inst.id, p])), [parts]);
   const interactive = useMemo(() => parts.filter((p) => (p.inst.props.behavior && p.inst.props.behavior !== 'none') || p.inst.className === 'TrussPart'), [parts]);
@@ -376,6 +377,8 @@ export function PlaytestWorld({ runtime, queue, input, session, onEvent, playerP
         continue;
       }
       const behavior = part.inst.props.behavior;
+      // When the place's rules are scripts (ObbyRules), only the disappearing tiles stay built in.
+      if (scripted && behavior !== 'fade') continue;
       if (behavior === 'fade' && part.fade.phase !== 'solid') continue;
       const hit = touches(part, feet, 0.75) || touches(part, pos, 1.2);
       if (!hit) continue;

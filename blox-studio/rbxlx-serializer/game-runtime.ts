@@ -14,6 +14,13 @@ const VALUE_DEFAULT: Rec = { IntValue: 0, NumberValue: 0, StringValue: '', BoolV
 const SHAPES = ['Block', 'Ball', 'Cylinder', 'Wedge', 'CornerWedge'];
 const SERVICES = ['Workspace', 'Lighting', 'ReplicatedStorage', 'ServerScriptService', 'StarterGui', 'Players', 'RunService', 'TweenService', 'Debris', 'CollectionService', 'UserInputService', 'HttpService', 'DataStoreService'];
 
+/** Part settings from Properties → Gameplay are visible to scripts as attributes (Behavior, Checkpoint, JumpPower, Motion, MoveTime, SpinSpeed). Real attributes win. */
+const GAMEPLAY_ATTRS: [string, string][] = [['Behavior', 'behavior'], ['Checkpoint', 'checkpoint'], ['JumpPower', 'jumpPower'], ['Motion', 'motion'], ['MoveTime', 'moveTime'], ['SpinSpeed', 'spinSpeed']];
+const attrsOf = (p: Rec): Rec => {
+  const out: Rec = {};
+  GAMEPLAY_ATTRS.forEach(([a, k]) => { const v = p[k]; if (v !== undefined && v !== 'none') out[a] = v; });
+  return { ...out, ...((p.attributes as Rec) || {}) };
+};
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 const vec = (v: Vec3 | undefined, d: Vec3) => { const a = v || d; return new Vector3(a[0], a[1], a[2]); };
 const toVec3 = (v: unknown, what: string): Vec3 => { if (!(v instanceof Vector3)) throw new LuauError(`${what} must be a Vector3`); return v.toArray(); };
@@ -263,8 +270,9 @@ export class InstanceRef implements HostObject {
       case 'GetFullName': return () => rt.fullName(i);
       case 'Clone': return () => rt.ref(rt.clone(id, null).id);
       case 'SetAttribute': return (_s: unknown, n: unknown, v: unknown) => { p.attributes = { ...((p.attributes as Rec) || {}), [tostr(n)]: v }; rt.signal(id, `AttributeChanged:${tostr(n)}`).fire(); };
-      case 'GetAttribute': return (_s: unknown, n: unknown) => (p.attributes as Rec | undefined)?.[tostr(n)];
-      case 'GetAttributes': return () => { const t = new LuaTable(); Object.entries((p.attributes as Rec) || {}).forEach(([k, v]) => t.set(k, v)); return t; };
+      case 'GetAttribute': return (_s: unknown, n: unknown) => attrsOf(p)[tostr(n)];
+      case 'GetAttributes': return () => { const t = new LuaTable(); Object.entries(attrsOf(p)).forEach(([k, v]) => t.set(k, v)); return t; };
+      case 'SetCore': if (i.className === 'StarterGui') return (_s: unknown, n: unknown, v: unknown) => rt.setCore(tostr(n), v); break;
       case 'AddTag': return (_s: unknown, t: unknown) => { const a = (p.tags as string[]) || []; if (!a.includes(tostr(t))) p.tags = [...a, tostr(t)]; };
       case 'RemoveTag': return (_s: unknown, t: unknown) => { p.tags = ((p.tags as string[]) || []).filter((x) => x !== tostr(t)); };
       case 'HasTag': return (_s: unknown, t: unknown) => ((p.tags as string[]) || []).includes(tostr(t));
@@ -337,6 +345,8 @@ export type RuntimeOptions = {
   onChange?: (inst: PlaceInstance, key: string) => void;
   onAdded?: (inst: PlaceInstance) => void;
   onRemoved?: (id: string) => void;
+  /** A script asked for a notification (StarterGui:SetCore("SendNotification", {...})). */
+  onNotify?: (n: { title: string; text: string; duration: number }) => void;
 };
 
 const ease = (style: string, dir: string, x: number): number => {
@@ -598,6 +608,17 @@ export class GameRuntime {
   }
   /** Stops every script. */
   stop(): void { this.stopped = true; this.interps.forEach((i) => i.abort()); this.host.abort(); this.timers = []; this.tweens = []; }
+
+  /** StarterGui:SetCore — only SendNotification is supported; other names are ignored with a warning. */
+  setCore(name: string, v: unknown): void {
+    if (name !== 'SendNotification') { this.out('warn', `SetCore("${name}") is not supported yet`); return; }
+    if (!(v instanceof LuaTable)) throw new LuauError('SetCore("SendNotification") needs a table with Title and Text');
+    const f = (k: string) => { const x = v.get(k); return x == null ? '' : tostr(x); };
+    const d = v.get('Duration');
+    this.opts.onNotify?.({ title: f('Title'), text: f('Text'), duration: typeof d === 'number' ? d : 5 });
+  }
+  /** True when this place's rules run as scripts (Workspace attribute ScriptedGameplay), so the built-in gameplay stays out of the way. */
+  get scripted(): boolean { return (this.nodes.get('Workspace')?.props.attributes as Rec | undefined)?.ScriptedGameplay === true; }
 
   // ---- for the UI
   /** The player's leaderstats as name/value pairs. */

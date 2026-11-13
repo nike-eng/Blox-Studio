@@ -67,6 +67,19 @@
   text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35), 0 8px 30px rgba(0, 0, 0, 0.35);
   animation: pop 2.2s ease forwards;
 }
+/* Roblox-style notification from StarterGui:SetCore("SendNotification", ...) */
+.toast {
+  position: absolute; left: 50%; bottom: max(24px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  width: min(340px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 12px; pointer-events: none;
+  display: grid; gap: 2px; background: rgba(17, 20, 31, 0.9); border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); animation: toastIn 0.25s ease-out;
+}
+.toast strong { font-size: 1rem; font-weight: 800; color: #fff; }
+.toast span { font-size: 0.9rem; font-weight: 600; color: #cbd5e1; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
 .good { color: #4ade80; }
 .bad { color: #ff6b6b; }
 .gold { color: #ffd60a; animation: popStay 0.5s ease forwards; }
