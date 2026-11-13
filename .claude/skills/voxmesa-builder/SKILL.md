@@ -15,11 +15,12 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 
 ## 2. Live Express Routes (Auto-Extracted)
 - app.use((req, res, next) => {
-- app.get('/ping', (_req, res) => {
+- app.get('/ping', async (_req, res) => {
 - app.use(express.json({ limit: '20mb' }));
 - app.use(async (_req, _res, next) => { await ready; next(); });
 - app.use('/projects', requireOwner);
 - app.use('/mcp-link', requireOwner);
+- app.post('/upload', requireOwner, upload.single('file'), wrap(async (req, res) => {
 - app.get('/', (_req, res) => { res.json({ message: 'VoxMesa service' }); });
 - app.get('/roblox/status', (_req, res) => {
 - app.get('/projects', wrap(async (_req, res) => {
