@@ -8,18 +8,18 @@ import { VoxelScene, TEMPLATE_SCENES, HERO_SCENE, gameScene, type Scene } from '
 import styles from './home.module.css';
 
 
-const TEMPLATES: { id: PlaceTemplate; name: string; desc: string }[] = [
-  { id: 'baseplate', name: 'Flat ground', desc: 'A flat grey floor with a spawn point.' },
-  { id: 'obby', name: 'Sky Islands Course', desc: '5 stages: lava, moving platforms, spinner, jump pad and truss tower, with checkpoints and a timer.' },
-  { id: 'empty', name: 'Empty', desc: 'Just the services. Build from scratch.' },
+const TEMPLATES: { id: PlaceTemplate; name: string; desc: string; tag: string }[] = [
+  { id: 'baseplate', name: 'Flat ground', desc: 'A flat grey floor with a spawn point.', tag: 'Starter' },
+  { id: 'obby', name: 'Sky Islands Course', desc: '5 stages: lava, moving platforms, spinner, jump pad and truss tower, with checkpoints and a timer.', tag: 'Ready to play' },
+  { id: 'empty', name: 'Empty', desc: 'Just the services. Build from scratch.', tag: 'Blank' },
 ];
 
 const edited = (p: ProjectSummary) => `Edited ${new Date(p.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
 const statusOf = (p: ProjectSummary) => (p.publishHistory[0] ? `v${p.publishHistory[0].versionNumber} on Roblox` : p.placeId ? 'Linked' : 'Not published');
 
 /** The picture at the top of a card. */
-function Preview({ scene, className }: { scene: Scene; className: string }) {
-  return <div className={className} style={{ background: scene.bg }}><VoxelScene scene={scene} className={styles.scene} /></div>;
+function Preview({ scene, className, tag }: { scene: Scene; className: string; tag?: string }) {
+  return <div className={className} style={{ background: scene.bg }}><VoxelScene scene={scene} className={styles.scene} />{tag && <span className={styles.tag}>{tag}</span>}</div>;
 }
 
 
@@ -114,6 +114,8 @@ export function ProjectsPage() {
   );
 
   const pickedT = TEMPLATES.find((t) => t.id === picked);
+  const latest = games.reduce<ProjectSummary | null>((a, p) => (!a || new Date(p.updatedAt) > new Date(a.updatedAt) ? p : a), null);
+  const jumpToNew = () => document.getElementById('new-games')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className={styles.home}>
@@ -121,20 +123,29 @@ export function ProjectsPage() {
         <Link to="/" className={styles.brand}><span className={styles.logo}><BrandMark size={28} /></span><span>VoxMesa</span></Link>
         <a className={styles.docsLink} href="https://create.roblox.com/docs/cloud/open-cloud/usage-place-publishing" target="_blank" rel="noreferrer">How publishing works <span aria-hidden="true">↗</span></a>
       </header>
-      <section className={styles.hero}>
+      <section className={styles.stage}>
         <div className={styles.heroText}>
           <h1>Build <span className={styles.mark}>3D games</span> in your browser.</h1>
           <p>Place parts, write Lua scripts and press Play. Export a place file or publish to your own Roblox experience. Nothing to install.</p>
+          <div className={styles.cta}>
+            {latest ? (
+              <Link to={`/studio/${latest.id}`} className={styles.ctaMain}>Continue “{latest.name}”</Link>
+            ) : (
+              <button type="button" className={styles.ctaMain} onClick={jumpToNew}>Start your first game</button>
+            )}
+            {latest && <button type="button" className={styles.ctaGhost} onClick={jumpToNew}>New game</button>}
+          </div>
         </div>
-        <div className={styles.heroArt}><VoxelScene scene={HERO_SCENE} /></div>
+        <div className={styles.heroArt}><VoxelScene scene={HERO_SCENE} riseClass={styles.rise} /></div>
       </section>
       <AccountCard onChange={load} refreshKey={projects?.length ?? 0} />
       <section>
-        <h2 className={styles.sectionTitle}>New games</h2>
+        <h2 className={styles.sectionTitle} id="new-games">New games</h2>
+        <p className={styles.hint}>Pick a starter, give it a name and press Create.</p>
         <div className={styles.grid}>
           {TEMPLATES.map((t) => (
             <button type="button" key={t.id} className={`${styles.card} ${picked === t.id ? styles.cardOn : ''}`} aria-pressed={picked === t.id} onClick={() => setPicked(t.id)}>
-              <Preview scene={TEMPLATE_SCENES[t.id]} className={styles.preview} />
+              <Preview scene={TEMPLATE_SCENES[t.id]} className={styles.preview} tag={t.tag} />
               <div className={styles.cardBody}><strong>{t.name}</strong><span className={styles.desc}>{t.desc}</span></div>
             </button>
           ))}
@@ -151,6 +162,7 @@ export function ProjectsPage() {
       </section>
       <section>
         <h2 className={styles.sectionTitle}>My games{projects && <span className={styles.count}>{games.length}</span>}</h2>
+        <p className={styles.hint}>Places you changed or published. Tap one to keep building.</p>
         {error && <p className={styles.error}>{error}</p>}
         {!projects && !error && <p className={styles.muted}>Loading…</p>}
         {projects && games.length === 0 && <p className={styles.empty}>No saved games yet. Make a place above, change something and press Save. It will show up here.</p>}

@@ -2,7 +2,8 @@
  * Little isometric block scenes used as previews on the home page.
  * Each scene is a grid of columns (i, j) with a height h, drawn back to front.
  */
-export type Cell = { i: number; j: number; h: number; tone: string };
+/** A column at (i, j) that starts z levels up and is h levels tall. */
+export type Cell = { i: number; j: number; h: number; tone: string; z?: number };
 export type Scene = { cells: Cell[]; bg: string; outline?: boolean };
 
 type Tone = { top: string; left: string; right: string };
@@ -19,6 +20,9 @@ const TONES: Record<string, Tone> = {
   rose: { top: '#ffb6c8', left: '#ee7a98', right: '#c25a77' },
   violet: { top: '#c9b8ff', left: '#8f7be0', right: '#6f5db8' },
   ice: { top: '#aee6ff', left: '#62b5e0', right: '#4a93b8' },
+  water: { top: '#6cc6ff', left: '#3f9fe0', right: '#2f7fb8' },
+  wood: { top: '#c79562', left: '#9b6d44', right: '#7a5233' },
+  leaf: { top: '#6fd06b', left: '#3ea04d', right: '#2f7e3d' },
 };
 
 const W = 18; // half the width of one block
@@ -51,16 +55,27 @@ export const TEMPLATE_SCENES: Record<string, Scene> = {
   empty: { bg: sky('#232838'), outline: true, cells: [{ i: 1, j: 1, h: 2, tone: 'grey' }] },
 };
 
-/** A tall stepped mesa for the top of the page: each layer of rock has its own colour. */
-export const HERO_SCENE: Scene = {
-  bg: 'transparent',
-  cells: [
-    [1, 2, 2, 1],
-    [2, 3, 3, 2],
-    [2, 3, 4, 2],
-    [1, 2, 2, 1],
-  ].flatMap((row, i) => row.map((h, j) => ({ i, j, h, tone: ['grey', 'sand', 'amber', 'mint'][h - 1] }))),
-};
+/** A small island for the top of the page: snow-capped rock, grass, sand beach, water and two trees. */
+function heroWorld(): Cell[] {
+  const cells: Cell[] = [];
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const d = Math.hypot(i - 3.4, j - 3.4);
+      if (d > 4.4) continue;
+      const h = d < 1.3 ? 5 : d < 2.2 ? 4 : d < 3 ? 3 : d < 3.7 ? 2 : 1;
+      if (h === 1) { cells.push({ i, j, h: 1, tone: 'water' }); continue; }
+      const cap = ['', '', 'sand', 'grass', 'grey', 'snow'][h];
+      cells.push({ i, j, h: h - 1, tone: h === 2 ? 'sand' : 'grey' });
+      cells.push({ i, j, z: h - 1, h: 1, tone: cap });
+    }
+  }
+  cells.push({ i: 4, j: 4, z: 5, h: 1, tone: 'mint' });
+  for (const [i, j] of [[2, 3], [5, 5]]) {
+    cells.push({ i, j, z: 3, h: 1, tone: 'wood' }, { i, j, z: 4, h: 1, tone: 'leaf' });
+  }
+  return cells;
+}
+export const HERO_SCENE: Scene = { bg: 'transparent', cells: heroWorld() };
 
 const THEMES: [string, string][] = [['grass', '#243a30'], ['sand', '#3b3226'], ['rose', '#3b2831'], ['violet', '#2f2b45'], ['ice', '#223648']];
 
@@ -89,29 +104,31 @@ export function gameScene(id: string): Scene {
  * Draws a scene as an SVG.
  * @param props.scene - the scene to draw
  * @param props.className - class for the svg
+ * @param props.riseClass - optional class that makes each block rise into place (one after another)
  */
-export function VoxelScene({ scene, className }: { scene: Scene; className?: string }) {
-  const ordered = [...scene.cells].sort((a, b) => a.i + a.j - (b.i + b.j) || a.i - b.i);
+export function VoxelScene({ scene, className, riseClass }: { scene: Scene; className?: string; riseClass?: string }) {
+  const ordered = [...scene.cells].sort((a, b) => a.i + a.j - (b.i + b.j) || (a.z ?? 0) - (b.z ?? 0) || a.i - b.i);
   // fit the picture to the blocks that are in it
   const xs = scene.cells.map((c) => (c.i - c.j) * W);
   const minX = Math.min(...xs) - W - 3;
   const maxX = Math.max(...xs) + W + 3;
-  const minY = Math.min(...scene.cells.map((c) => (c.i + c.j) * H - c.h * L)) - 3;
-  const maxY = Math.max(...scene.cells.map((c) => (c.i + c.j) * H + 2 * H)) + 3;
+  const minY = Math.min(...scene.cells.map((c) => (c.i + c.j) * H - ((c.z ?? 0) + c.h) * L)) - 3;
+  const maxY = Math.max(...scene.cells.map((c) => (c.i + c.j) * H + 2 * H - (c.z ?? 0) * L)) + 3;
   return (
     <svg className={className} viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} role="presentation" aria-hidden="true" focusable="false">
-      {ordered.map((c) => {
+      {ordered.map((c, n) => {
+        const z = c.z ?? 0;
         const cx = (c.i - c.j) * W;
         const cy = (c.i + c.j) * H;
         const d = c.h * L;
-        const ty = cy - d;
+        const ty = cy - (z + c.h) * L;
         const t = TONES[c.tone] ?? TONES.grey;
         const left = pts([[cx - W, ty + H], [cx, ty + 2 * H], [cx, ty + 2 * H + d], [cx - W, ty + H + d]]);
         const right = pts([[cx, ty + 2 * H], [cx + W, ty + H], [cx + W, ty + H + d], [cx, ty + 2 * H + d]]);
         const top = pts([[cx, ty], [cx + W, ty + H], [cx, ty + 2 * H], [cx - W, ty + H]]);
         if (scene.outline) {
           return (
-            <g key={`${c.i}-${c.j}`} fill="none" stroke="#8d96ab" strokeWidth="1.4" strokeDasharray="4 3" strokeLinejoin="round">
+            <g key={n} fill="none" stroke="#8d96ab" strokeWidth="1.4" strokeDasharray="4 3" strokeLinejoin="round">
               <polygon points={left} />
               <polygon points={right} />
               <polygon points={top} />
@@ -119,7 +136,7 @@ export function VoxelScene({ scene, className }: { scene: Scene; className?: str
           );
         }
         return (
-          <g key={`${c.i}-${c.j}`} stroke="rgba(10,12,20,0.28)" strokeWidth="0.6" strokeLinejoin="round">
+          <g key={n} className={riseClass} style={riseClass ? { animationDelay: `${(c.i + c.j) * 55 + z * 70}ms` } : undefined} stroke="rgba(10,12,20,0.28)" strokeWidth="0.6" strokeLinejoin="round">
             <polygon points={left} fill={t.left} />
             <polygon points={right} fill={t.right} />
             <polygon points={top} fill={t.top} />
