@@ -12,6 +12,16 @@ const TEMPLATES: { id: PlaceTemplate; name: string; desc: string; preview: strin
   { id: 'empty', name: 'Empty', desc: 'Just the services. Build from scratch.', preview: 'linear-gradient(160deg,#1b1f2a,#2a3040)' },
 ];
 
+const GAME_PREVIEWS = [
+  'linear-gradient(160deg,#87c5ff 0 50%,#5b5d69 50%)',
+  'linear-gradient(160deg,#9be7c4 0 50%,#3f5b4b 50%)',
+  'linear-gradient(160deg,#ffd29a 0 50%,#6b4f3a 50%)',
+  'linear-gradient(160deg,#c9b8ff 0 50%,#4b4468 50%)',
+  'linear-gradient(160deg,#ffb3c1 0 50%,#6a4450 50%)',
+];
+/** A steady colour for a place, so each game card looks different but never changes. */
+const previewFor = (id: string) => GAME_PREVIEWS[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % GAME_PREVIEWS.length];
+
 /**
  * Home page: create a new place from a template or open an existing project.
  */
@@ -61,6 +71,29 @@ export function ProjectsPage() {
     try { await studioApi.deleteProjects(ids); closeCleanup(); await load(); } catch (e) { setError((e as Error).message); } finally { setDeleting(false); }
   };
 
+  const renderCard = (p: ProjectSummary) => (
+    <div key={p.id} className={styles.gameCard}>
+      <Link to={`/studio/${p.id}`} className={styles.card}>
+        <div className={styles.preview} style={{ background: previewFor(p.id) }} />
+        <div className={styles.cardBody}>
+          <strong>{p.name}</strong>
+          <span>Edited {new Date(p.updatedAt).toLocaleString()}</span>
+          <span className={p.placeId ? styles.badgeLinked : styles.badge}>
+            {p.publishHistory[0] ? `v${p.publishHistory[0].versionNumber} on Roblox` : p.placeId ? 'Linked' : 'Not published'}
+          </span>
+        </div>
+      </Link>
+      <button
+        type="button"
+        className={styles.cardDelete}
+        onClick={async () => { if (window.confirm(`Delete "${p.name}"?`)) { await studioApi.deleteProject(p.id); load(); } }}
+        aria-label={`Delete ${p.name}`}
+      >
+        ✕
+      </button>
+    </div>
+  );
+
   const renderRow = (p: ProjectSummary, selecting: boolean) => (
     <div key={p.id} className={styles.row}>
       {selecting && <input type="checkbox" className={styles.tick} checked={chosen.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Select ${p.name}`} />}
@@ -95,7 +128,7 @@ export function ProjectsPage() {
       </section>
       <AccountCard onChange={load} />
       <section>
-        <h2 className={styles.sectionTitle}>New place</h2>
+        <h2 className={styles.sectionTitle}>New games</h2>
         <div className={styles.grid}>
           {TEMPLATES.map((t) => (
             <button type="button" key={t.id} className={`${styles.card} ${picked === t.id ? styles.cardOn : ''}`} aria-pressed={picked === t.id} onClick={() => setPicked(t.id)}>
@@ -116,7 +149,7 @@ export function ProjectsPage() {
         {error && <p className={styles.error}>{error}</p>}
         {!projects && !error && <p className={styles.muted}>Loading…</p>}
         {projects && games.length === 0 && <p className={styles.muted}>Nothing here yet. Create a place above, change something and press Save: it will show up here.</p>}
-        <div className={styles.list}>{games.map((p) => renderRow(p, false))}</div>
+        <div className={styles.grid}>{games.map(renderCard)}</div>
         {games.length >= 10 && older.length === 0 && (
           <p className={styles.muted}>
             Lots of places and none sorted as unused copies?{' '}
@@ -128,8 +161,8 @@ export function ProjectsPage() {
       {older.length > 0 && (
         <section>
           <details className={styles.older}>
-            <summary className={styles.olderSummary}>Older places ({older.length})</summary>
-            <p className={styles.muted}>Copies of the starter templates that were never changed. Open one to start fresh from it, or clean them up.</p>
+            <summary className={styles.olderSummary}>Older versions ({older.length})</summary>
+            <p className={styles.muted}>Earlier copies and starter places that were never changed. Open one to start from it again, or clean them up.</p>
             <div className={styles.cleanBar}>
               {cleaning ? (
                 <>

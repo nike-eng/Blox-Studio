@@ -20,6 +20,26 @@ export function fingerprint(list: PlaceInstance[]): string {
 }
 
 const TEMPLATES: PlaceTemplate[] = ['baseplate', 'obby', 'empty'];
+
+/** The obby as it was before its rules became scripts (places made from it are still unchanged copies). */
+function legacyObby(): PlaceInstance[] {
+  return createPlaceTemplate('obby')
+    .filter((i) => i.name !== 'ObbyRules' && i.name !== 'ObbyClient')
+    .map((i) => {
+      if (i.id === 'Workspace') { const { attributes: _unused, ...props } = i.props; return { ...i, props }; }
+      if (i.className === 'Script' && i.name === 'Main') {
+        return { ...i, props: { ...i.props, source: [
+          '-- Your own server code goes here.',
+          '-- Kill bricks, checkpoints, the finish line, moving platforms and jump pads',
+          '-- are configured per part (Properties → Gameplay) and run automatically.',
+          'print("Welcome to Sky Islands Obby!")',
+          '',
+        ].join('\n') } };
+      }
+      return i;
+    });
+}
+
 let known: Set<string> | null = null;
 
 /**
@@ -29,12 +49,12 @@ let known: Set<string> | null = null;
  * @returns true when it is an unchanged template
  */
 export function isUntouchedTemplate(list: PlaceInstance[]): boolean {
-  known ||= new Set(TEMPLATES.map((t) => fingerprint(createPlaceTemplate(t))));
+  known ||= new Set([...TEMPLATES.map((t) => fingerprint(createPlaceTemplate(t))), fingerprint(legacyObby())]);
   return known.has(fingerprint(list));
 }
 
 /** Bump when the matching rules change, so earlier answers are worked out again. */
-export const PRISTINE_V = 1;
+export const PRISTINE_V = 2;
 
 /**
  * Says how a place differs from the closest starter template (used to explain why nothing matched).
@@ -46,8 +66,9 @@ export function whyNotTemplate(list: PlaceInstance[]): string {
   const mineSet = new Set(mine);
   let best = '';
   let bestScore = Infinity;
-  for (const t of TEMPLATES) {
-    const ref = fingerprint(createPlaceTemplate(t)).split('\n');
+  for (const ref0 of [...TEMPLATES.map((t) => [t, createPlaceTemplate(t)] as const), ['legacy obby', legacyObby()] as const]) {
+    const t = ref0[0];
+    const ref = fingerprint(ref0[1] as PlaceInstance[]).split('\n');
     const refSet = new Set(ref);
     const extra = mine.filter((l) => !refSet.has(l));
     const missing = ref.filter((l) => !mineSet.has(l));
