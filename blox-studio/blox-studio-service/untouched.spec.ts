@@ -9,6 +9,12 @@ describe('isUntouchedTemplate', () => {
     expect(fingerprint(createPlaceTemplate('obby'))).toBe(fingerprint(createPlaceTemplate('obby')));
   });
 
+  it('still matches after the place went through the database (empty values are dropped)', () => {
+    for (const t of ['baseplate', 'obby', 'empty'] as const) {
+      expect(isUntouchedTemplate(JSON.parse(JSON.stringify(createPlaceTemplate(t))))).toBe(true);
+    }
+  });
+
   it('notices any change', () => {
     const edited = createPlaceTemplate('obby');
     const part = edited.find((i) => i.className === 'Part')!;

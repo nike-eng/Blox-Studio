@@ -2,7 +2,7 @@ import { createPlaceTemplate, type PlaceInstance, type PlaceTemplate } from '@ni
 
 const stable = (v: unknown): string => {
   if (Array.isArray(v)) return `[${v.map(stable).join(',')}]`;
-  if (v && typeof v === 'object') return `{${Object.keys(v).sort().map((k) => `${k}:${stable((v as Record<string, unknown>)[k])}`).join(',')}}`;
+  if (v && typeof v === 'object') return `{${Object.keys(v).filter((k) => (v as Record<string, unknown>)[k] !== undefined).sort().map((k) => `${k}:${stable((v as Record<string, unknown>)[k])}`).join(',')}}`;
   return JSON.stringify(v) ?? 'null';
 };
 
