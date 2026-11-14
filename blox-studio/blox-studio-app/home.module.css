@@ -75,3 +75,11 @@
 .accountBtnGhost { min-height: 44px; padding: 0 1rem; border: 1px solid #3a3d46; border-radius: 10px; background: transparent; color: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
 .accountLink { border: none; background: none; padding: 0; color: #8ab4f8; font: inherit; text-decoration: underline; cursor: pointer; }
 .accountOk { margin: 0; color: #4ade80; }
+
+/* ---- Create bar and clean-up ---- */
+.cardOn { outline: 3px solid #00a2ff; outline-offset: -3px; }
+.createBar, .cleanBar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 12px; background: rgba(0, 162, 255, 0.12); }
+.cleanBar { margin: 0 0 0.75rem; }
+.titleRow { margin: 2rem 0 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.titleRow .sectionTitle { margin: 0; }
+.tick { width: 24px; height: 24px; flex: none; accent-color: #00a2ff; }

@@ -24,14 +24,37 @@ export function ProjectsPage() {
   const load = () => studioApi.listProjects().then(setProjects).catch((e) => setError(e.message));
   useEffect(() => { load(); }, []);
 
-  const create = async (template: PlaceTemplate, label: string) => {
+  const [picked, setPicked] = useState<PlaceTemplate | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+
+  // Tapping a template only selects it; a place is made when you press Create (and only once, even on a double tap).
+  const create = async () => {
+    const t = TEMPLATES.find((x) => x.id === picked);
+    if (!t || creating) return;
+    setCreating(true);
     try {
       setError('');
-      const project = await studioApi.createProject(name.trim() || `My ${label.toLowerCase()} place`, template);
+      const project = await studioApi.createProject(name.trim() || `My ${t.name.toLowerCase()} place`, t.id);
       navigate(`/studio/${project.id}`);
     } catch (e) {
       setError((e as Error).message);
+      setCreating(false);
     }
+  };
+
+  // A place nobody ever saved: its last-edit time is still its creation time.
+  const untouched = (p: ProjectSummary) => !p.placeId && !p.publishHistory.length && Math.abs(new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime()) < 3000;
+  const toggle = (id: string) => setChosen((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const closeCleanup = () => { setCleaning(false); setChosen(new Set()); };
+  const removeChosen = async () => {
+    const ids = [...chosen];
+    if (!ids.length || deleting) return;
+    if (!window.confirm(`Delete ${ids.length} ${ids.length === 1 ? 'place' : 'places'}? This cannot be undone.`)) return;
+    setDeleting(true);
+    try { await studioApi.deleteProjects(ids); closeCleanup(); await load(); } catch (e) { setError((e as Error).message); } finally { setDeleting(false); }
   };
 
   return (
@@ -50,21 +73,41 @@ export function ProjectsPage() {
         <h2 className={styles.sectionTitle}>New place</h2>
         <div className={styles.grid}>
           {TEMPLATES.map((t) => (
-            <button type="button" key={t.id} className={styles.card} onClick={() => create(t.id, t.name)}>
+            <button type="button" key={t.id} className={`${styles.card} ${picked === t.id ? styles.cardOn : ''}`} aria-pressed={picked === t.id} onClick={() => setPicked(t.id)}>
               <div className={styles.preview} style={{ background: t.preview }} />
               <div className={styles.cardBody}><strong>{t.name}</strong><span>{t.desc}</span></div>
             </button>
           ))}
         </div>
+        {picked && (
+          <div className={styles.createBar}>
+            <span>Ready: <strong>{TEMPLATES.find((t) => t.id === picked)?.name}</strong></span>
+            <button type="button" className={styles.accountBtn} disabled={creating} onClick={create}>{creating ? 'Creating…' : 'Create place'}</button>
+          </div>
+        )}
       </section>
       <section>
-        <h2 className={styles.sectionTitle}>My places</h2>
+        <div className={styles.titleRow}>
+          <h2 className={styles.sectionTitle}>My places{projects ? ` (${projects.length})` : ''}</h2>
+          {projects && projects.length > 1 && !cleaning && <button type="button" className={styles.accountBtnGhost} onClick={() => setCleaning(true)}>Clean up</button>}
+        </div>
+        {cleaning && projects && (
+          <div className={styles.cleanBar}>
+            <span>Tick places to delete.</span>
+            <span className={styles.accountActions}>
+              <button type="button" className={styles.accountBtnGhost} onClick={() => setChosen(new Set(projects.filter(untouched).map((p) => p.id)))}>Pick never-saved ({projects.filter(untouched).length})</button>
+              <button type="button" className={styles.accountBtn} disabled={!chosen.size || deleting} onClick={removeChosen}>{deleting ? 'Deleting…' : `Delete ${chosen.size}`}</button>
+              <button type="button" className={styles.accountBtnGhost} onClick={closeCleanup}>Done</button>
+            </span>
+          </div>
+        )}
         {error && <p className={styles.error}>{error}</p>}
         {!projects && !error && <p className={styles.muted}>Loading…</p>}
         {projects?.length === 0 && <p className={styles.muted}>No places yet — pick a template above.</p>}
         <div className={styles.list}>
           {projects?.map((p) => (
             <div key={p.id} className={styles.row}>
+              {cleaning && <input type="checkbox" className={styles.tick} checked={chosen.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Select ${p.name}`} />}
               <Link to={`/studio/${p.id}`} className={styles.rowMain}>
                 <strong>{p.name}</strong>
                 <span className={styles.muted}>Edited {new Date(p.updatedAt).toLocaleString()}</span>

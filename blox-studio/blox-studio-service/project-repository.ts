@@ -167,6 +167,19 @@ export class ProjectRepository {
     return res.modifiedCount ?? 0;
   }
 
+  /**
+   * Deletes several of an owner's projects at once. Ids the owner does not own are ignored.
+   * @param ownerHash - who is asking
+   * @param ids - project ids
+   * @returns how many were deleted
+   */
+  async removeMany(ownerHash: string, ids: string[]): Promise<number> {
+    const valid = ids.filter((id) => mongoose.isValidObjectId(id));
+    if (!valid.length) return 0;
+    const res = await ProjectModel.deleteMany({ _id: { $in: valid }, ownerHash });
+    return res.deletedCount ?? 0;
+  }
+
   /** Deletes a project. */
   async remove(id: string): Promise<boolean> {
     if (!mongoose.isValidObjectId(id)) return false;

@@ -226,6 +226,12 @@ export function run() {
     res.json(project);
   }));
 
+  app.post('/projects/delete-many', wrap(async (req, res) => {
+    const ids = req.body?.ids;
+    if (!Array.isArray(ids) || ids.length > 500 || !ids.every((i) => typeof i === 'string')) { res.status(400).json({ message: 'Send a list of up to 500 place ids.' }); return; }
+    res.json({ deleted: await service.projects.removeMany(ownerOf(res), ids) });
+  }));
+
   app.delete('/projects/:id', wrap(async (req, res) => {
     res.json({ ok: await service.projects.remove(String(req.params.id)) });
   }));
