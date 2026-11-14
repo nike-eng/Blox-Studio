@@ -4,7 +4,7 @@ import type { PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer
 import { studioApi, type ProjectSummary } from './studio-api.js';
 import { BrandMark } from './brand-mark.js';
 import { AccountCard } from './account-card.js';
-import { VoxelScene, TEMPLATE_SCENES, HERO_SCENE, gameScene, type Scene } from './voxel-scene.js';
+import { WorldScene, TEMPLATE_SCENES, HERO_SCENE, gameScene, type Scene } from './world-scene.js';
 import styles from './home.module.css';
 
 
@@ -19,7 +19,7 @@ const statusOf = (p: ProjectSummary) => (p.publishHistory[0] ? `v${p.publishHist
 
 /** The picture at the top of a card. */
 function Preview({ scene, className, tag }: { scene: Scene; className: string; tag?: string }) {
-  return <div className={className} style={{ background: scene.bg }}><VoxelScene scene={scene} className={styles.scene} />{tag && <span className={styles.tag}>{tag}</span>}</div>;
+  return <div className={className} style={{ background: scene.bg }}><WorldScene scene={scene} className={styles.scene} twinkleClass={tag ? styles.twinkle : undefined} />{tag && <span className={styles.tag}>{tag}</span>}</div>;
 }
 
 
@@ -136,7 +136,7 @@ export function ProjectsPage() {
             {latest && <button type="button" className={styles.ctaGhost} onClick={jumpToNew}>New game</button>}
           </div>
         </div>
-        <div className={styles.heroArt}><VoxelScene scene={HERO_SCENE} riseClass={styles.rise} /></div>
+        <div className={styles.heroArt}><WorldScene scene={HERO_SCENE} className={styles.scene} twinkleClass={styles.twinkle} driftClass={styles.drift} sunClass={styles.glow} /></div>
       </section>
       <AccountCard onChange={load} refreshKey={projects?.length ?? 0} />
       <section>
