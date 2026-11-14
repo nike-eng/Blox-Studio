@@ -17,6 +17,8 @@ export type ProjectSummary = {
   publishHistory: PublishRecord[];
   updatedAt: string;
   createdAt: string;
+  /** Still exactly a starter template. */
+  pristine?: boolean;
 };
 
 /**
@@ -174,7 +176,7 @@ export const studioApi = {
     request<Project>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(patch) }),
   /** Deletes a project. */
   /** Ids of places that are still an unchanged starter template. */
-  untouchedProjects: () => request<{ ids: string[] }>('/projects/untouched'),
+  untouchedProjects: () => request<{ ids: string[]; checked: number; hint: string }>('/projects/untouched'),
   /** Deletes several places at once (only ones you own). */
   deleteProjects: (ids: string[]) => request<{ deleted: number }>('/projects/delete-many', { method: 'POST', body: JSON.stringify({ ids }) }),
   deleteProject: (id: string) => request<{ ok: boolean }>(`/projects/${id}`, { method: 'DELETE' }),

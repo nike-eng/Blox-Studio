@@ -210,7 +210,7 @@ export function run() {
 
   // Places still identical to a starter template (used by "Clean up"). Must stay above /projects/:id.
   app.get('/projects/untouched', wrap(async (_req, res) => {
-    res.json({ ids: await service.projects.untouchedIds(ownerOf(res)) });
+    res.json(await service.projects.untouchedReport(ownerOf(res)));
   }));
 
   app.get('/projects/:id', wrap(async (req, res) => {

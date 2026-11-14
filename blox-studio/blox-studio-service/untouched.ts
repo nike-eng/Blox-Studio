@@ -32,3 +32,29 @@ export function isUntouchedTemplate(list: PlaceInstance[]): boolean {
   known ||= new Set(TEMPLATES.map((t) => fingerprint(createPlaceTemplate(t))));
   return known.has(fingerprint(list));
 }
+
+/** Bump when the matching rules change, so earlier answers are worked out again. */
+export const PRISTINE_V = 1;
+
+/**
+ * Says how a place differs from the closest starter template (used to explain why nothing matched).
+ * @param list - place instances
+ * @returns short description
+ */
+export function whyNotTemplate(list: PlaceInstance[]): string {
+  const mine = fingerprint(list).split('\n');
+  const mineSet = new Set(mine);
+  let best = '';
+  let bestScore = Infinity;
+  for (const t of TEMPLATES) {
+    const ref = fingerprint(createPlaceTemplate(t)).split('\n');
+    const refSet = new Set(ref);
+    const extra = mine.filter((l) => !refSet.has(l));
+    const missing = ref.filter((l) => !mineSet.has(l));
+    if (extra.length + missing.length < bestScore) {
+      bestScore = extra.length + missing.length;
+      best = `closest ${t}: ${extra.length} different, ${missing.length} missing. Place has: ${(extra[0] || '-').slice(0, 220)} | Template has: ${(missing[0] || '-').slice(0, 220)}`;
+    }
+  }
+  return best;
+}

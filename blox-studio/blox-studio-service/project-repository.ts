@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { createHash, randomBytes } from 'node:crypto';
-import { isUntouchedTemplate } from './untouched.js';
+import { isUntouchedTemplate, PRISTINE_V, whyNotTemplate } from './untouched.js';
 import { createPlaceTemplate, type PlaceInstance, type PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 
 /**
@@ -27,6 +27,8 @@ export type Project = {
   publishHistory: PublishRecord[];
   updatedAt: string;
   createdAt: string;
+  /** Still exactly a starter template (nothing changed). Only set on lists. */
+  pristine?: boolean;
 };
 
 const ProjectSchema = new Schema(
@@ -38,6 +40,9 @@ const ProjectSchema = new Schema(
     ownerHash: String,
     /** Set when a guest's projects were moved into an account, so the move can be undone by hand. */
     claimedFrom: String,
+    /** True while the place is still exactly a starter template; pristineV says which rule version worked that out. */
+    pristine: Boolean,
+    pristineV: Number,
     publishHistory: { type: [Schema.Types.Mixed], default: [] },
   },
   { timestamps: true, minimize: false }
@@ -85,11 +90,20 @@ export class ProjectRepository {
   /** Lists the owner's projects, most recently edited first (without instances). Projects made before owners existed are claimed by the first caller. */
   async list(ownerHash: string): Promise<Omit<Project, 'instances'>[]> {
     await ProjectModel.updateMany({ ownerHash: { $exists: false } }, { $set: { ownerHash } });
+    await this.backfillPristine(ownerHash);
     const docs = await ProjectModel.find({ ownerHash }, { instances: 0 }).sort({ updatedAt: -1 }).lean();
     return docs.map((d) => {
       const { instances, ...rest } = toProject(d);
-      return rest;
+      return { ...rest, pristine: d.pristine === true };
     });
+  }
+
+  /** Works out `pristine` once for places that do not have an up-to-date answer (older places, or after the rules changed). */
+  private async backfillPristine(ownerHash: string): Promise<void> {
+    const docs = await ProjectModel.find({ ownerHash, pristineV: { $ne: PRISTINE_V } }, { instances: 1 }).lean();
+    if (!docs.length) return;
+    const ops = docs.map((d) => ({ updateOne: { filter: { _id: d._id }, update: { $set: { pristine: isUntouchedTemplate((d.instances || []) as PlaceInstance[]), pristineV: PRISTINE_V } } } }));
+    await ProjectModel.bulkWrite(ops, { timestamps: false });
   }
 
   /** Gets a single project by id. */
@@ -108,14 +122,16 @@ export class ProjectRepository {
 
   /** Creates a new project from a template. */
   async create(name: string, template: PlaceTemplate = 'baseplate', ownerHash = ''): Promise<Project> {
-    const doc = await ProjectModel.create({ name, instances: createPlaceTemplate(template), ...(ownerHash ? { ownerHash } : {}) });
+    const doc = await ProjectModel.create({ name, instances: createPlaceTemplate(template), pristine: true, pristineV: PRISTINE_V, ...(ownerHash ? { ownerHash } : {}) });
     return toProject(doc.toObject());
   }
 
   /** Updates editable fields of a project. */
   async update(id: string, patch: Partial<Pick<Project, 'name' | 'instances' | 'universeId' | 'placeId'>>): Promise<Project | null> {
     if (!mongoose.isValidObjectId(id)) return null;
-    const doc = await ProjectModel.findByIdAndUpdate(id, { $set: patch }, { new: true }).lean();
+    // Changing the content or the name means someone cares about this place: it is no longer an unused starter copy.
+    const set = patch.instances || patch.name ? { ...patch, pristine: false, pristineV: PRISTINE_V } : patch;
+    const doc = await ProjectModel.findByIdAndUpdate(id, { $set: set }, { new: true }).lean();
     return doc ? toProject(doc) : null;
   }
 
@@ -169,13 +185,19 @@ export class ProjectRepository {
   }
 
   /**
-   * Ids of an owner's places that are still exactly a starter template and were never published or linked to Roblox.
+   * Which of an owner's places are still unchanged starter templates, plus (when none are) how the first one differs.
    * @param ownerHash - who is asking
-   * @returns project ids
+   * @returns ids, how many places were checked, and an explanation of a mismatch
    */
-  async untouchedIds(ownerHash: string): Promise<string[]> {
+  async untouchedReport(ownerHash: string): Promise<{ ids: string[]; checked: number; hint: string }> {
     const docs = await ProjectModel.find({ ownerHash, 'publishHistory.0': { $exists: false }, $or: [{ placeId: '' }, { placeId: { $exists: false } }, { placeId: null }] }, { instances: 1 }).lean();
-    return docs.filter((d) => isUntouchedTemplate((d.instances || []) as PlaceInstance[])).map((d) => String(d._id));
+    const ids: string[] = [];
+    let hint = '';
+    for (const d of docs) {
+      if (isUntouchedTemplate((d.instances || []) as PlaceInstance[])) ids.push(String(d._id));
+      else if (!hint) hint = whyNotTemplate((d.instances || []) as PlaceInstance[]);
+    }
+    return { ids, checked: docs.length, hint: ids.length ? '' : hint };
   }
 
   /**

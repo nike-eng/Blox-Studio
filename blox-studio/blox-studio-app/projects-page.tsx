@@ -45,14 +45,12 @@ export function ProjectsPage() {
     }
   };
 
-  // Places that are still exactly a starter template (the server checks the content, so moved or re-saved places count too).
-  const [untouched, setUntouched] = useState<string[]>([]);
-  useEffect(() => {
-    if (!cleaning) return;
-    let alive = true;
-    studioApi.untouchedProjects().then((r) => { if (alive) setUntouched(r.ids); }).catch((e) => setError(e.message));
-    return () => { alive = false; };
-  }, [cleaning]);
+  // "My games" = places that were changed, named or published. "Older places" = copies still exactly a starter template.
+  const isOlder = (p: ProjectSummary) => p.pristine === true && !p.placeId && !p.publishHistory.length;
+  const games = projects?.filter((p) => !isOlder(p)) ?? [];
+  const older = projects?.filter(isOlder) ?? [];
+  const [why, setWhy] = useState('');
+  const explain = () => { setWhy('Checking…'); studioApi.untouchedProjects().then((r) => setWhy(`Server checked ${r.checked} places, ${r.ids.length} unchanged.${r.hint ? ` ${r.hint}` : ''}`)).catch((e) => setWhy(e.message)); };
   const toggle = (id: string) => setChosen((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const closeCleanup = () => { setCleaning(false); setChosen(new Set()); };
   const removeChosen = async () => {
@@ -62,6 +60,27 @@ export function ProjectsPage() {
     setDeleting(true);
     try { await studioApi.deleteProjects(ids); closeCleanup(); await load(); } catch (e) { setError((e as Error).message); } finally { setDeleting(false); }
   };
+
+  const renderRow = (p: ProjectSummary, selecting: boolean) => (
+    <div key={p.id} className={styles.row}>
+      {selecting && <input type="checkbox" className={styles.tick} checked={chosen.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Select ${p.name}`} />}
+      <Link to={`/studio/${p.id}`} className={styles.rowMain}>
+        <strong>{p.name}</strong>
+        <span className={styles.muted}>Edited {new Date(p.updatedAt).toLocaleString()}</span>
+      </Link>
+      <span className={p.placeId ? styles.badgeLinked : styles.badge}>
+        {p.publishHistory[0] ? `v${p.publishHistory[0].versionNumber} on Roblox` : p.placeId ? 'Linked' : 'Not published'}
+      </span>
+      <button
+        type="button"
+        className={styles.deleteBtn}
+        onClick={async () => { if (window.confirm(`Delete "${p.name}"?`)) { await studioApi.deleteProject(p.id); load(); } }}
+        aria-label={`Delete ${p.name}`}
+      >
+        ✕
+      </button>
+    </div>
+  );
 
   return (
     <div className={styles.home}>
@@ -93,46 +112,42 @@ export function ProjectsPage() {
         )}
       </section>
       <section>
-        <div className={styles.titleRow}>
-          <h2 className={styles.sectionTitle}>My places{projects ? ` (${projects.length})` : ''}</h2>
-          {projects && projects.length > 1 && !cleaning && <button type="button" className={styles.accountBtnGhost} onClick={() => setCleaning(true)}>Clean up</button>}
-        </div>
-        {cleaning && projects && (
-          <div className={styles.cleanBar}>
-            <span>Tick places to delete.</span>
-            <span className={styles.accountActions}>
-              <button type="button" className={styles.accountBtnGhost} onClick={() => setChosen(new Set(untouched))}>Pick untouched ({untouched.length})</button>
-              <button type="button" className={styles.accountBtn} disabled={!chosen.size || deleting} onClick={removeChosen}>{deleting ? 'Deleting…' : `Delete ${chosen.size}`}</button>
-              <button type="button" className={styles.accountBtnGhost} onClick={closeCleanup}>Done</button>
-            </span>
-          </div>
-        )}
+        <h2 className={styles.sectionTitle}>My games{projects ? ` (${games.length})` : ''}</h2>
         {error && <p className={styles.error}>{error}</p>}
         {!projects && !error && <p className={styles.muted}>Loading…</p>}
-        {projects?.length === 0 && <p className={styles.muted}>No places yet — pick a template above.</p>}
-        <div className={styles.list}>
-          {projects?.map((p) => (
-            <div key={p.id} className={styles.row}>
-              {cleaning && <input type="checkbox" className={styles.tick} checked={chosen.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Select ${p.name}`} />}
-              <Link to={`/studio/${p.id}`} className={styles.rowMain}>
-                <strong>{p.name}</strong>
-                <span className={styles.muted}>Edited {new Date(p.updatedAt).toLocaleString()}</span>
-              </Link>
-              <span className={p.placeId ? styles.badgeLinked : styles.badge}>
-                {p.publishHistory[0] ? `v${p.publishHistory[0].versionNumber} on Roblox` : p.placeId ? 'Linked' : 'Not published'}
-              </span>
-              <button
-                type="button"
-                className={styles.deleteBtn}
-                onClick={async () => { if (window.confirm(`Delete "${p.name}"?`)) { await studioApi.deleteProject(p.id); load(); } }}
-                aria-label={`Delete ${p.name}`}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
+        {projects && games.length === 0 && <p className={styles.muted}>Nothing here yet. Create a place above, change something and press Save: it will show up here.</p>}
+        <div className={styles.list}>{games.map((p) => renderRow(p, false))}</div>
+        {games.length >= 10 && older.length === 0 && (
+          <p className={styles.muted}>
+            Lots of places and none sorted as unused copies?{' '}
+            <button type="button" className={styles.accountLink} onClick={explain}>Check why</button>
+            {why && <span> {why}</span>}
+          </p>
+        )}
       </section>
+      {older.length > 0 && (
+        <section>
+          <details className={styles.older}>
+            <summary className={styles.olderSummary}>Older places ({older.length})</summary>
+            <p className={styles.muted}>Copies of the starter templates that were never changed. Open one to start fresh from it, or clean them up.</p>
+            <div className={styles.cleanBar}>
+              {cleaning ? (
+                <>
+                  <span>Tick places to delete.</span>
+                  <span className={styles.accountActions}>
+                    <button type="button" className={styles.accountBtnGhost} onClick={() => setChosen(new Set(older.map((p) => p.id)))}>Select all ({older.length})</button>
+                    <button type="button" className={styles.accountBtn} disabled={!chosen.size || deleting} onClick={removeChosen}>{deleting ? 'Deleting…' : `Delete ${chosen.size}`}</button>
+                    <button type="button" className={styles.accountBtnGhost} onClick={closeCleanup}>Done</button>
+                  </span>
+                </>
+              ) : (
+                <button type="button" className={styles.accountBtnGhost} onClick={() => setCleaning(true)}>Clean up</button>
+              )}
+            </div>
+            <div className={styles.list}>{older.map((p) => renderRow(p, cleaning))}</div>
+          </details>
+        </section>
+      )}
       <p className={styles.disclaimer}>VoxMesa is an independent project. It is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox and Roblox Studio are trademarks of Roblox Corporation, named here only to describe file compatibility.</p>
     </div>
   );
