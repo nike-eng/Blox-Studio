@@ -98,9 +98,9 @@ export function AccountCard({ onChange, refreshKey = 0 }: { onChange: () => void
             <span className={styles.avatar} aria-hidden="true">{(session.email || '?')[0].toUpperCase()}</span>
             <span className={styles.whoText}><strong>{session.email || 'your account'}</strong>{tierPill}</span>
           </span>
+          {planBlock}
           <button type="button" className={styles.accountBtnGhost} onClick={() => studioApi.signOut()}>Sign out</button>
         </div>
-        {planBlock}
         {guestCount > 0 && (
           <div className={styles.accountNote}>
             <span>You have {guestCount} {guestCount === 1 ? 'place' : 'places'} made on this browser before signing in. Move {guestCount === 1 ? 'it' : 'them'} into your account?</span>

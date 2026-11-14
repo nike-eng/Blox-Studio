@@ -4,6 +4,7 @@ import type { PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer
 import { studioApi, type ProjectSummary } from './studio-api.js';
 import { BrandMark } from './brand-mark.js';
 import { AccountCard } from './account-card.js';
+import { Icon } from './icons.js';
 import { WorldScene, TEMPLATE_SCENES, HERO_SCENE, gameScene, type Scene } from './world-scene.js';
 import styles from './home.module.css';
 
@@ -19,7 +20,7 @@ const statusOf = (p: ProjectSummary) => (p.publishHistory[0] ? `v${p.publishHist
 
 /** The picture at the top of a card. */
 function Preview({ scene, className, tag }: { scene: Scene; className: string; tag?: string }) {
-  return <div className={className} style={{ background: scene.bg }}><WorldScene scene={scene} className={styles.scene} twinkleClass={tag ? styles.twinkle : undefined} />{tag && <span className={styles.tag}>{tag}</span>}</div>;
+  return <div className={className} style={{ background: scene.bg }}><WorldScene scene={scene} className={styles.scene} />{tag && <span className={styles.tag}>{tag}</span>}</div>;
 }
 
 
@@ -89,7 +90,7 @@ export function ProjectsPage() {
         onClick={async () => { if (window.confirm(`Delete "${p.name}"?`)) { await studioApi.deleteProject(p.id); load(); } }}
         aria-label={`Delete ${p.name}`}
       >
-        ✕
+        <Icon name="close" size={18} />
       </button>
     </div>
   );
@@ -108,7 +109,7 @@ export function ProjectsPage() {
         onClick={async () => { if (window.confirm(`Delete "${p.name}"?`)) { await studioApi.deleteProject(p.id); load(); } }}
         aria-label={`Delete ${p.name}`}
       >
-        ✕
+        <Icon name="close" size={18} />
       </button>
     </div>
   );
@@ -121,7 +122,7 @@ export function ProjectsPage() {
     <div className={styles.home}>
       <header className={styles.top}>
         <Link to="/" className={styles.brand}><span className={styles.logo}><BrandMark size={28} /></span><span>VoxMesa</span></Link>
-        <a className={styles.docsLink} href="https://create.roblox.com/docs/cloud/open-cloud/usage-place-publishing" target="_blank" rel="noreferrer">How publishing works <span aria-hidden="true">↗</span></a>
+        <a className={styles.docsLink} href="https://create.roblox.com/docs/cloud/open-cloud/usage-place-publishing" target="_blank" rel="noreferrer">How publishing works</a>
       </header>
       <section className={styles.stage}>
         <div className={styles.heroText}>
@@ -145,6 +146,7 @@ export function ProjectsPage() {
         <div className={styles.grid}>
           {TEMPLATES.map((t) => (
             <button type="button" key={t.id} className={`${styles.card} ${picked === t.id ? styles.cardOn : ''}`} aria-pressed={picked === t.id} onClick={() => setPicked(t.id)}>
+              {picked === t.id && <span className={styles.checkBadge}><Icon name="check" size={16} /></span>}
               <Preview scene={TEMPLATE_SCENES[t.id]} className={styles.preview} tag={t.tag} />
               <div className={styles.cardBody}><strong>{t.name}</strong><span className={styles.desc}>{t.desc}</span></div>
             </button>
