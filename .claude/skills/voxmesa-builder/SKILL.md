@@ -31,6 +31,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - app.get('/roblox/status', (_req, res) => {
 - app.get('/projects', wrap(async (_req, res) => {
 - app.post('/projects', wrap(async (req, res) => {
+- app.get('/projects/untouched', wrap(async (_req, res) => {
 - app.get('/projects/:id', wrap(async (req, res) => {
 - app.put('/projects/:id', wrap(async (req, res) => {
 - app.post('/projects/delete-many', wrap(async (req, res) => {
@@ -111,6 +112,8 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-service/mcp.ts
 - ./blox-studio/blox-studio-service/project-repository.ts
 - ./blox-studio/blox-studio-service/roblox-publisher.ts
+- ./blox-studio/blox-studio-service/untouched.spec.ts
+- ./blox-studio/blox-studio-service/untouched.ts
 - ./blox-studio/rbxlx-serializer/blox-runtime.ts
 - ./blox-studio/rbxlx-serializer/game-runtime.spec.ts
 - ./blox-studio/rbxlx-serializer/game-runtime.ts
