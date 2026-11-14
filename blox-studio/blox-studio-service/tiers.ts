@@ -5,9 +5,9 @@ const MB = 1024 * 1024;
 
 /** What each plan allows. `null` means no limit. Change the numbers here. */
 export const LIMITS: Record<Tier, { projects: number | null; uploadBytes: number }> = {
-  free: { projects: 3, uploadBytes: 50 * MB },
-  pro: { projects: 25, uploadBytes: 1024 * MB },
-  expert: { projects: null, uploadBytes: 5 * 1024 * MB },
+  free: { projects: 5, uploadBytes: 70 * MB },
+  pro: { projects: 25, uploadBytes: 250 * MB },
+  expert: { projects: null, uploadBytes: 500 * MB },
 };
 
 const NAMES: Record<Tier, string> = { free: 'Free', pro: 'Pro', expert: 'Expert' };
