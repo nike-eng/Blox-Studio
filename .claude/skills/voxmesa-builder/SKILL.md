@@ -112,6 +112,8 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-service/mcp.ts
 - ./blox-studio/blox-studio-service/project-repository.ts
 - ./blox-studio/blox-studio-service/roblox-publisher.ts
+- ./blox-studio/blox-studio-service/tiers.spec.ts
+- ./blox-studio/blox-studio-service/tiers.ts
 - ./blox-studio/blox-studio-service/untouched.spec.ts
 - ./blox-studio/blox-studio-service/untouched.ts
 - ./blox-studio/rbxlx-serializer/blox-runtime.ts
