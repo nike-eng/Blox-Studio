@@ -1,20 +1,22 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { captureSignInFromUrl, loadSession, onAuthChange } from './auth-session.js';
-import { studioApi } from './studio-api.js';
+import { studioApi, type AccountInfo } from './studio-api.js';
 import styles from './home.module.css';
 
 /**
  * Sign-in card for the projects page: email link sign-in, the signed-in state, and the offer to move
  * places made before signing in into the account.
  * @param props.onChange - called when who is signed in changes (so the list of places can reload)
+ * @param props.refreshKey - changes whenever the number of places changes, so the plan numbers refresh
  */
-export function AccountCard({ onChange }: { onChange: () => void }) {
+export function AccountCard({ onChange, refreshKey = 0 }: { onChange: () => void; refreshKey?: number }) {
   const [session, setSession] = useState(() => loadSession());
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [guestCount, setGuestCount] = useState(0);
+  const [plan, setPlan] = useState<AccountInfo | null>(null);
 
   // The email link brings the person back here with the sign-in in the address bar.
   useEffect(() => {
@@ -33,6 +35,19 @@ export function AccountCard({ onChange }: { onChange: () => void }) {
     studioApi.guestProjects().then((g) => { if (alive) setGuestCount(g.count); }).catch(() => { /* the offer is optional */ });
     return () => { alive = false; };
   }, [signedIn]);
+
+  // Plan and usage ("Free · 2 of 3 places").
+  useEffect(() => {
+    let alive = true;
+    studioApi.account().then((a) => { if (alive) setPlan(a); }).catch(() => { /* the line is optional */ });
+    return () => { alive = false; };
+  }, [signedIn, refreshKey]);
+  const MB = 1024 * 1024;
+  const planLine = plan && (
+    <span className={styles.muted}>
+      {plan.tier[0].toUpperCase() + plan.tier.slice(1)} plan · {plan.usage.projects}{plan.limits.projects === null ? '' : ` of ${plan.limits.projects}`} places · {Math.round(plan.usage.uploadBytes / MB)} of {Math.round(plan.limits.uploadBytes / MB)} MB uploads
+    </span>
+  );
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
@@ -64,6 +79,7 @@ export function AccountCard({ onChange }: { onChange: () => void }) {
           <span>Signed in as <strong>{session.email || 'your account'}</strong></span>
           <button type="button" className={styles.accountBtnGhost} onClick={() => studioApi.signOut()}>Sign out</button>
         </div>
+        {planLine}
         {guestCount > 0 && (
           <div className={styles.accountNote}>
             <span>You have {guestCount} {guestCount === 1 ? 'place' : 'places'} made on this browser before signing in. Move {guestCount === 1 ? 'it' : 'them'} into your account?</span>
@@ -103,6 +119,7 @@ export function AccountCard({ onChange }: { onChange: () => void }) {
           <button type="submit" className={styles.accountBtn} disabled={state === 'sending'}>{state === 'sending' ? 'Sending…' : 'Email me a link'}</button>
         </form>
       )}
+      {planLine}
       <span className={styles.muted}>No password. You can keep using VoxMesa without signing in; places then stay on this browser only.</span>
       {error && <p className={styles.error}>{error}</p>}
     </section>

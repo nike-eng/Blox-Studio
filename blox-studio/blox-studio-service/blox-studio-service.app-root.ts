@@ -4,6 +4,7 @@ import { handleRpc, type McpStore } from "./mcp.js";
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import rateLimit from 'express-rate-limit';
+import { checkCreate, checkUpload, LIMITS, tierFor } from './tiers.js';
 import { cachedVerifier, friendlyAuthError, guestOwnerHash, looksLikeEmail, makeLimiter, resolveCaller, safeRedirect, type AuthUser } from './auth.js';
 
 export function run() {
@@ -111,6 +112,14 @@ export function run() {
       readOnly: true,
     });
   }));
+  // Plans: Free / Pro / Expert (see tiers.ts). Set by hand for now with EXPERT_EMAILS / PRO_EMAILS in the Render settings.
+  const tierOf = (res: express.Response) => tierFor((res.locals.user as AuthUser | undefined)?.email);
+  const usedUploadBytes = async (ownerHash: string): Promise<number> => {
+    try {
+      const { data } = await supabase.storage.from('uploads').list(ownerHash, { limit: 1000 });
+      return (data || []).reduce((n, f) => n + (Number((f.metadata as { size?: number } | null)?.size) || 0), 0);
+    } catch { return 0; }
+  };
   app.use('/projects', writeLimiter, requireOwner);
   app.use('/mcp-link', requireOwner);
   app.post('/upload', uploadLimiter, requireOwner, upload.single('file'), wrap(async (req, res) => {
@@ -118,6 +127,9 @@ export function run() {
       res.status(400).json({ message: 'No file provided' });
       return;
     }
+
+    const tooMuch = checkUpload(tierOf(res), await usedUploadBytes(ownerOf(res)), req.file.size);
+    if (tooMuch) { res.status(403).json({ message: tooMuch }); return; }
 
     const safeName = `${ownerOf(res)}/${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
 
@@ -177,7 +189,14 @@ export function run() {
 
   app.get('/account', requireOwner, wrap(async (_req, res) => {
     const user = res.locals.user as AuthUser | undefined;
-    res.json({ signedIn: !!user, email: user?.email || '' });
+    const tier = tierOf(res);
+    res.json({
+      signedIn: !!user,
+      email: user?.email || '',
+      tier,
+      limits: LIMITS[tier],
+      usage: { projects: await service.projects.countOwned(ownerOf(res)), uploadBytes: await usedUploadBytes(ownerOf(res)) },
+    });
   }));
 
   // How many projects are waiting on this browser (made before signing in).
@@ -205,6 +224,8 @@ export function run() {
 
   app.post('/projects', wrap(async (req, res) => {
     const { name, template } = req.body || {};
+    const blocked = checkCreate(tierOf(res), await service.projects.countOwned(ownerOf(res)));
+    if (blocked) { res.status(403).json({ message: blocked }); return; }
     res.json(await service.projects.create(String(name || 'Untitled Place'), template, ownerOf(res)));
   }));
 

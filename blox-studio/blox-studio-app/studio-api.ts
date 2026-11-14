@@ -21,6 +21,15 @@ export type ProjectSummary = {
   pristine?: boolean;
 };
 
+/** Who is signed in, their plan and how much of it is used. `null` limits mean unlimited. */
+export type AccountInfo = {
+  signedIn: boolean;
+  email: string;
+  tier: 'free' | 'pro' | 'expert';
+  limits: { projects: number | null; uploadBytes: number };
+  usage: { projects: number; uploadBytes: number };
+};
+
 /**
  * Full project including the place instances.
  */
@@ -208,7 +217,7 @@ export const studioApi = {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   },
   /** Who is signed in on this device (email), or not. */
-  account: () => request<{ signedIn: boolean; email: string }>('/account'),
+  account: () => request<AccountInfo>('/account'),
   /** Sends a sign-in link to an email address. The link opens the editor back on this site. */
   startSignIn: (email: string) =>
     request<{ ok: boolean }>('/auth/email', { method: 'POST', body: JSON.stringify({ email, redirectTo: `${window.location.origin}/projects` }) }),

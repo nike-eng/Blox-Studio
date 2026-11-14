@@ -126,7 +126,7 @@ export function ProjectsPage() {
         <p>Place parts, write Lua scripts and press Play. When you are ready, export a place file or publish it to your own experience. No install needed.</p>
         <input className={styles.nameInput} placeholder="Name your new place" value={name} onChange={(e) => setName(e.target.value)} />
       </section>
-      <AccountCard onChange={load} />
+      <AccountCard onChange={load} refreshKey={projects?.length ?? 0} />
       <section>
         <h2 className={styles.sectionTitle}>New games</h2>
         <div className={styles.grid}>
