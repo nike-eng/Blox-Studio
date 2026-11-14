@@ -208,6 +208,11 @@ export function run() {
     res.json(await service.projects.create(String(name || 'Untitled Place'), template, ownerOf(res)));
   }));
 
+  // Places still identical to a starter template (used by "Clean up"). Must stay above /projects/:id.
+  app.get('/projects/untouched', wrap(async (_req, res) => {
+    res.json({ ids: await service.projects.untouchedIds(ownerOf(res)) });
+  }));
+
   app.get('/projects/:id', wrap(async (req, res) => {
     const project = await service.projects.get(String(req.params.id));
     if (!project) { res.status(404).json({ message: 'Project not found' }); return; }

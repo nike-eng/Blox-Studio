@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { createHash, randomBytes } from 'node:crypto';
+import { isUntouchedTemplate } from './untouched.js';
 import { createPlaceTemplate, type PlaceInstance, type PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 
 /**
@@ -162,9 +163,19 @@ export class ProjectRepository {
    */
   async claim(from: string, to: string): Promise<number> {
     if (!from || !to || from === to) return 0;
-    const res = await ProjectModel.updateMany({ ownerHash: from }, { $set: { ownerHash: to, claimedFrom: from } });
-    if ((await McpLinkModel.countDocuments({ ownerHash: to })) === 0) await McpLinkModel.updateMany({ ownerHash: from }, { $set: { ownerHash: to } });
+    const res = await ProjectModel.updateMany({ ownerHash: from }, { $set: { ownerHash: to, claimedFrom: from } }, { timestamps: false });
+    if ((await McpLinkModel.countDocuments({ ownerHash: to })) === 0) await McpLinkModel.updateMany({ ownerHash: from }, { $set: { ownerHash: to } }, { timestamps: false });
     return res.modifiedCount ?? 0;
+  }
+
+  /**
+   * Ids of an owner's places that are still exactly a starter template and were never published or linked to Roblox.
+   * @param ownerHash - who is asking
+   * @returns project ids
+   */
+  async untouchedIds(ownerHash: string): Promise<string[]> {
+    const docs = await ProjectModel.find({ ownerHash, 'publishHistory.0': { $exists: false }, $or: [{ placeId: '' }, { placeId: { $exists: false } }, { placeId: null }] }, { instances: 1 }).lean();
+    return docs.filter((d) => isUntouchedTemplate((d.instances || []) as PlaceInstance[])).map((d) => String(d._id));
   }
 
   /**

@@ -45,8 +45,14 @@ export function ProjectsPage() {
     }
   };
 
-  // A place nobody ever saved: its last-edit time is still its creation time.
-  const untouched = (p: ProjectSummary) => !p.placeId && !p.publishHistory.length && Math.abs(new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime()) < 3000;
+  // Places that are still exactly a starter template (the server checks the content, so moved or re-saved places count too).
+  const [untouched, setUntouched] = useState<string[]>([]);
+  useEffect(() => {
+    if (!cleaning) return;
+    let alive = true;
+    studioApi.untouchedProjects().then((r) => { if (alive) setUntouched(r.ids); }).catch((e) => setError(e.message));
+    return () => { alive = false; };
+  }, [cleaning]);
   const toggle = (id: string) => setChosen((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const closeCleanup = () => { setCleaning(false); setChosen(new Set()); };
   const removeChosen = async () => {
@@ -95,7 +101,7 @@ export function ProjectsPage() {
           <div className={styles.cleanBar}>
             <span>Tick places to delete.</span>
             <span className={styles.accountActions}>
-              <button type="button" className={styles.accountBtnGhost} onClick={() => setChosen(new Set(projects.filter(untouched).map((p) => p.id)))}>Pick never-saved ({projects.filter(untouched).length})</button>
+              <button type="button" className={styles.accountBtnGhost} onClick={() => setChosen(new Set(untouched))}>Pick untouched ({untouched.length})</button>
               <button type="button" className={styles.accountBtn} disabled={!chosen.size || deleting} onClick={removeChosen}>{deleting ? 'Deleting…' : `Delete ${chosen.size}`}</button>
               <button type="button" className={styles.accountBtnGhost} onClick={closeCleanup}>Done</button>
             </span>
