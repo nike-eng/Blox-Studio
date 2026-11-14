@@ -33,6 +33,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - app.post('/projects', wrap(async (req, res) => {
 - app.get('/projects/:id', wrap(async (req, res) => {
 - app.put('/projects/:id', wrap(async (req, res) => {
+- app.post('/projects/delete-many', wrap(async (req, res) => {
 - app.delete('/projects/:id', wrap(async (req, res) => {
 - app.get('/projects/:id/export', wrap(async (req, res) => {
 - app.get('/projects/:id/publish-check', wrap(async (req, res) => {
