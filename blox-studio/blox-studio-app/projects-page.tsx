@@ -4,23 +4,24 @@ import type { PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer
 import { studioApi, type ProjectSummary } from './studio-api.js';
 import { BrandMark } from './brand-mark.js';
 import { AccountCard } from './account-card.js';
+import { VoxelScene, TEMPLATE_SCENES, HERO_SCENE, gameScene, type Scene } from './voxel-scene.js';
 import styles from './home.module.css';
 
-const TEMPLATES: { id: PlaceTemplate; name: string; desc: string; preview: string }[] = [
-  { id: 'baseplate', name: 'Flat ground', desc: 'A flat grey floor with a spawn point.', preview: 'linear-gradient(160deg,#87c5ff 0 55%,#5b5d69 55%)' },
-  { id: 'obby', name: 'Sky Islands Course', desc: '5 stages: lava, moving platforms, spinner, jump pad, truss tower — with checkpoints & timer.', preview: 'linear-gradient(160deg,#87c5ff 0 45%,#ff5a5f 45% 55%,#ffb400 55% 65%,#00c2a8 65% 75%,#5b5d69 75%)' },
-  { id: 'empty', name: 'Empty', desc: 'Just the services. Build from scratch.', preview: 'linear-gradient(160deg,#1b1f2a,#2a3040)' },
+
+const TEMPLATES: { id: PlaceTemplate; name: string; desc: string }[] = [
+  { id: 'baseplate', name: 'Flat ground', desc: 'A flat grey floor with a spawn point.' },
+  { id: 'obby', name: 'Sky Islands Course', desc: '5 stages: lava, moving platforms, spinner, jump pad and truss tower, with checkpoints and a timer.' },
+  { id: 'empty', name: 'Empty', desc: 'Just the services. Build from scratch.' },
 ];
 
-const GAME_PREVIEWS = [
-  'linear-gradient(160deg,#87c5ff 0 50%,#5b5d69 50%)',
-  'linear-gradient(160deg,#9be7c4 0 50%,#3f5b4b 50%)',
-  'linear-gradient(160deg,#ffd29a 0 50%,#6b4f3a 50%)',
-  'linear-gradient(160deg,#c9b8ff 0 50%,#4b4468 50%)',
-  'linear-gradient(160deg,#ffb3c1 0 50%,#6a4450 50%)',
-];
-/** A steady colour for a place, so each game card looks different but never changes. */
-const previewFor = (id: string) => GAME_PREVIEWS[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % GAME_PREVIEWS.length];
+const edited = (p: ProjectSummary) => `Edited ${new Date(p.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+const statusOf = (p: ProjectSummary) => (p.publishHistory[0] ? `v${p.publishHistory[0].versionNumber} on Roblox` : p.placeId ? 'Linked' : 'Not published');
+
+/** The picture at the top of a card. */
+function Preview({ scene, className }: { scene: Scene; className: string }) {
+  return <div className={className} style={{ background: scene.bg }}><VoxelScene scene={scene} className={styles.scene} /></div>;
+}
+
 
 /**
  * Home page: create a new place from a template or open an existing project.
@@ -71,16 +72,15 @@ export function ProjectsPage() {
     try { await studioApi.deleteProjects(ids); closeCleanup(); await load(); } catch (e) { setError((e as Error).message); } finally { setDeleting(false); }
   };
 
+
   const renderCard = (p: ProjectSummary) => (
     <div key={p.id} className={styles.gameCard}>
       <Link to={`/studio/${p.id}`} className={styles.card}>
-        <div className={styles.preview} style={{ background: previewFor(p.id) }} />
+        <Preview scene={gameScene(p.id)} className={styles.preview} />
         <div className={styles.cardBody}>
           <strong>{p.name}</strong>
-          <span>Edited {new Date(p.updatedAt).toLocaleString()}</span>
-          <span className={p.placeId ? styles.badgeLinked : styles.badge}>
-            {p.publishHistory[0] ? `v${p.publishHistory[0].versionNumber} on Roblox` : p.placeId ? 'Linked' : 'Not published'}
-          </span>
+          <span className={styles.meta}>{edited(p)}</span>
+          <span className={p.placeId ? styles.badgeLinked : styles.badge}>{statusOf(p)}</span>
         </div>
       </Link>
       <button
@@ -99,11 +99,9 @@ export function ProjectsPage() {
       {selecting && <input type="checkbox" className={styles.tick} checked={chosen.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Select ${p.name}`} />}
       <Link to={`/studio/${p.id}`} className={styles.rowMain}>
         <strong>{p.name}</strong>
-        <span className={styles.muted}>Edited {new Date(p.updatedAt).toLocaleString()}</span>
+        <span className={styles.muted}>{edited(p)}</span>
       </Link>
-      <span className={p.placeId ? styles.badgeLinked : styles.badge}>
-        {p.publishHistory[0] ? `v${p.publishHistory[0].versionNumber} on Roblox` : p.placeId ? 'Linked' : 'Not published'}
-      </span>
+      <span className={p.placeId ? styles.badgeLinked : styles.badge}>{statusOf(p)}</span>
       <button
         type="button"
         className={styles.deleteBtn}
@@ -115,16 +113,20 @@ export function ProjectsPage() {
     </div>
   );
 
+  const pickedT = TEMPLATES.find((t) => t.id === picked);
+
   return (
     <div className={styles.home}>
       <header className={styles.top}>
-        <Link to="/" className={styles.brand}><span className={styles.logo}><BrandMark size={26} /></span> VoxMesa</Link>
-        <a className={styles.docsLink} href="https://create.roblox.com/docs/cloud/open-cloud/usage-place-publishing" target="_blank" rel="noreferrer">How publishing works ↗</a>
+        <Link to="/" className={styles.brand}><span className={styles.logo}><BrandMark size={28} /></span><span>VoxMesa</span></Link>
+        <a className={styles.docsLink} href="https://create.roblox.com/docs/cloud/open-cloud/usage-place-publishing" target="_blank" rel="noreferrer">How publishing works <span aria-hidden="true">↗</span></a>
       </header>
       <section className={styles.hero}>
-        <h1>Build 3D games in your browser.</h1>
-        <p>Place parts, write Lua scripts and press Play. When you are ready, export a place file or publish it to your own experience. No install needed.</p>
-        <input className={styles.nameInput} placeholder="Name your new place" value={name} onChange={(e) => setName(e.target.value)} />
+        <div className={styles.heroText}>
+          <h1>Build <span className={styles.mark}>3D games</span> in your browser.</h1>
+          <p>Place parts, write Lua scripts and press Play. Export a place file or publish to your own Roblox experience. Nothing to install.</p>
+        </div>
+        <div className={styles.heroArt}><VoxelScene scene={HERO_SCENE} /></div>
       </section>
       <AccountCard onChange={load} refreshKey={projects?.length ?? 0} />
       <section>
@@ -132,24 +134,27 @@ export function ProjectsPage() {
         <div className={styles.grid}>
           {TEMPLATES.map((t) => (
             <button type="button" key={t.id} className={`${styles.card} ${picked === t.id ? styles.cardOn : ''}`} aria-pressed={picked === t.id} onClick={() => setPicked(t.id)}>
-              <div className={styles.preview} style={{ background: t.preview }} />
-              <div className={styles.cardBody}><strong>{t.name}</strong><span>{t.desc}</span></div>
+              <Preview scene={TEMPLATE_SCENES[t.id]} className={styles.preview} />
+              <div className={styles.cardBody}><strong>{t.name}</strong><span className={styles.desc}>{t.desc}</span></div>
             </button>
           ))}
         </div>
-        {picked && (
-          <div className={styles.createBar}>
-            <span>Ready: <strong>{TEMPLATES.find((t) => t.id === picked)?.name}</strong></span>
-            <button type="button" className={styles.accountBtn} disabled={creating} onClick={create}>{creating ? 'Creating…' : 'Create place'}</button>
-          </div>
+        {pickedT && (
+          <form className={styles.createBar} onSubmit={(e) => { e.preventDefault(); create(); }}>
+            <label className={styles.createName}>
+              <span className={styles.muted}>Name your new {pickedT.name.toLowerCase()} place (optional)</span>
+              <input className={styles.nameInput} placeholder={`My ${pickedT.name.toLowerCase()} place`} value={name} onChange={(e) => setName(e.target.value)} />
+            </label>
+            <button type="submit" className={styles.accountBtn} disabled={creating}>{creating ? 'Creating…' : 'Create place'}</button>
+          </form>
         )}
       </section>
       <section>
-        <h2 className={styles.sectionTitle}>My games{projects ? ` (${games.length})` : ''}</h2>
+        <h2 className={styles.sectionTitle}>My games{projects && <span className={styles.count}>{games.length}</span>}</h2>
         {error && <p className={styles.error}>{error}</p>}
         {!projects && !error && <p className={styles.muted}>Loading…</p>}
-        {projects && games.length === 0 && <p className={styles.muted}>Nothing here yet. Create a place above, change something and press Save: it will show up here.</p>}
-        <div className={styles.grid}>{games.map(renderCard)}</div>
+        {projects && games.length === 0 && <p className={styles.empty}>No saved games yet. Make a place above, change something and press Save. It will show up here.</p>}
+        <div className={`${styles.grid} ${styles.gameGrid}`}>{games.map(renderCard)}</div>
         {games.length >= 10 && older.length === 0 && (
           <p className={styles.muted}>
             Lots of places and none sorted as unused copies?{' '}
@@ -161,7 +166,7 @@ export function ProjectsPage() {
       {older.length > 0 && (
         <section>
           <details className={styles.older}>
-            <summary className={styles.olderSummary}>Older versions ({older.length})</summary>
+            <summary className={styles.olderSummary}>Older versions <span className={styles.count}>{older.length}</span></summary>
             <p className={styles.muted}>Earlier copies and starter places that were never changed. Open one to start from it again, or clean them up.</p>
             <div className={styles.cleanBar}>
               {cleaning ? (

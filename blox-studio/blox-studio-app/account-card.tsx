@@ -3,6 +3,22 @@ import { captureSignInFromUrl, loadSession, onAuthChange } from './auth-session.
 import { studioApi, type AccountInfo } from './studio-api.js';
 import styles from './home.module.css';
 
+/** One usage bar, like "Places 3 / 5". A null limit means no limit. */
+function Meter({ label, used, max, unit }: { label: string; used: number; max: number | null; unit: string }) {
+  const pct = max ? Math.min(100, Math.round((used / max) * 100)) : 0;
+  return (
+    <div className={styles.meter}>
+      <span className={styles.meterLabel}>{label}</span>
+      <span className={styles.meterValue}>{used}{max === null ? `${unit} · no limit` : ` / ${max}${unit}`}</span>
+      {max !== null && (
+        <span className={styles.meterBar} role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={Math.min(used, max)}>
+          <span className={styles.meterFill} data-high={pct >= 80 && used < max ? '' : undefined} data-over={used >= max ? '' : undefined} style={{ width: `${pct}%` }} />
+        </span>
+      )}
+    </div>
+  );
+}
+
 /**
  * Sign-in card for the projects page: email link sign-in, the signed-in state, and the offer to move
  * places made before signing in into the account.
@@ -39,15 +55,17 @@ export function AccountCard({ onChange, refreshKey = 0 }: { onChange: () => void
   // Plan and usage ("Free · 2 of 3 places").
   useEffect(() => {
     let alive = true;
-    studioApi.account().then((a) => { if (alive) setPlan(a); }).catch(() => { /* the line is optional */ });
+    studioApi.account().then((a) => { if (alive && a && typeof a.tier === 'string' && a.limits && a.usage) setPlan(a); }).catch(() => { /* the line is optional */ });
     return () => { alive = false; };
   }, [signedIn, refreshKey]);
   const MB = 1024 * 1024;
-  const planLine = plan && (
-    <span className={styles.muted}>
-      {plan.tier[0].toUpperCase() + plan.tier.slice(1)} plan · {plan.usage.projects}{plan.limits.projects === null ? '' : ` of ${plan.limits.projects}`} places · {Math.round(plan.usage.uploadBytes / MB)} of {Math.round(plan.limits.uploadBytes / MB)} MB uploads
-    </span>
+  const planBlock = plan && (
+    <div className={styles.plan}>
+      <Meter label="Places" used={plan.usage.projects} max={plan.limits.projects} unit="" />
+      <Meter label="Uploads" used={Math.round(plan.usage.uploadBytes / MB)} max={Math.round(plan.limits.uploadBytes / MB)} unit=" MB" />
+    </div>
   );
+  const tierPill = plan && <span className={styles.tier} data-tier={plan.tier}>{plan.tier} plan</span>;
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
@@ -76,10 +94,13 @@ export function AccountCard({ onChange, refreshKey = 0 }: { onChange: () => void
     return (
       <section className={styles.account} aria-label="Account">
         <div className={styles.accountRow}>
-          <span>Signed in as <strong>{session.email || 'your account'}</strong></span>
+          <span className={styles.who}>
+            <span className={styles.avatar} aria-hidden="true">{(session.email || '?')[0].toUpperCase()}</span>
+            <span className={styles.whoText}><strong>{session.email || 'your account'}</strong>{tierPill}</span>
+          </span>
           <button type="button" className={styles.accountBtnGhost} onClick={() => studioApi.signOut()}>Sign out</button>
         </div>
-        {planLine}
+        {planBlock}
         {guestCount > 0 && (
           <div className={styles.accountNote}>
             <span>You have {guestCount} {guestCount === 1 ? 'place' : 'places'} made on this browser before signing in. Move {guestCount === 1 ? 'it' : 'them'} into your account?</span>
@@ -119,7 +140,7 @@ export function AccountCard({ onChange, refreshKey = 0 }: { onChange: () => void
           <button type="submit" className={styles.accountBtn} disabled={state === 'sending'}>{state === 'sending' ? 'Sending…' : 'Email me a link'}</button>
         </form>
       )}
-      {planLine}
+      {planBlock}
       <span className={styles.muted}>No password. You can keep using VoxMesa without signing in; places then stay on this browser only.</span>
       {error && <p className={styles.error}>{error}</p>}
     </section>

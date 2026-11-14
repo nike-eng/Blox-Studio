@@ -1,96 +1,180 @@
+/* VoxMesa home: stratified-rock palette (the logo's mint and amber on blue-black ink),
+   isometric block previews, Bricolage Grotesque for display, Figtree for text, Space Mono for small data. */
 .home {
-  min-height: 100%;
+  --ink: #161922;
+  --s1: #1e222c;
+  --s2: #272c38;
+  --line: #343a4a;
+  --text: #eef0f5;
+  --muted: #a4abbb;
+  --faint: #838a9b;
+  --mint: #2fcf9b;
+  --mint-ink: #08241b;
+  --amber: #ffc233;
+  --danger: #ff7b72;
+  --ok: #5fe8bd;
+  --display: 'Bricolage Grotesque', 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Figtree', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  min-height: 100dvh;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 0 1.25rem 4rem;
+  padding-block: 0 4rem;
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+  color: var(--text);
+  font-family: var(--body);
+  color-scheme: dark;
+  /* paint the ink colour edge to edge while the content stays centred */
+  background: var(--ink);
+  box-shadow: 0 0 0 100vmax var(--ink);
+  clip-path: inset(0 -100vmax);
 }
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 0;
-}
-.brand { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; color: inherit; text-decoration: none; }
+.home *, .home *::before, .home *::after { box-sizing: border-box; }
+
+/* ---- Header ---- */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; }
+.brand { display: flex; align-items: center; gap: 0.6rem; color: inherit; text-decoration: none; font-family: var(--display); font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em; }
 .logo { display: inline-flex; align-items: center; line-height: 0; }
-.docsLink { color: #8ab4f8; font-size: 0.9rem; text-decoration: none; }
-.hero { padding: 3rem 0 2rem; }
-.hero h1 { font-size: clamp(1.8rem, 5vw, 3rem); margin: 0 0 0.75rem; line-height: 1.1; }
-.hero p { color: #a8abb3; font-size: 1.1rem; max-width: 40rem; margin: 0 0 1.5rem; }
-.nameInput {
-  width: 100%;
-  max-width: 26rem;
-  min-height: 44px;
-  padding: 0.6rem 0.9rem;
-  border-radius: 8px;
-  border: 1px solid #3a3d46;
-  background: #272930;
-  color: inherit;
-  font-size: 1rem;
-}
-.sectionTitle { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: #a8abb3; margin: 2rem 0 1rem; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.docsLink { min-height: 44px; display: inline-flex; align-items: center; padding: 0 0.9rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 0.88rem; text-decoration: none; white-space: nowrap; }
+.docsLink:hover { color: var(--text); border-color: var(--faint); }
+
+/* ---- Hero ---- */
+.hero { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 2rem 0 1rem; }
+.heroText { min-width: 0; }
+.hero h1 { margin: 0 0 1rem; max-width: 15ch; font-family: var(--display); font-weight: 800; font-size: clamp(2.3rem, 7.5vw, 4rem); line-height: 1.02; letter-spacing: -0.025em; text-wrap: balance; }
+.mark { color: var(--mint); }
+.hero p { margin: 0; max-width: 34rem; color: var(--muted); font-size: 1.08rem; line-height: 1.55; }
+.heroArt { flex: none; width: min(300px, 32vw); }
+.heroArt svg { display: block; width: 100%; height: auto; }
+@media (max-width: 719px) { .heroArt { display: none; } .hero { padding-top: 1.25rem; } }
+
+/* ---- Section titles ---- */
+.sectionTitle { display: flex; align-items: center; gap: 0.6rem; margin: 2.25rem 0 1rem; font-family: var(--display); font-weight: 700; font-size: 1.4rem; letter-spacing: -0.01em; }
+.count { padding: 0.1rem 0.55rem; border: 1px solid var(--line); border-radius: 999px; background: var(--s2); color: var(--muted); font-family: var(--mono); font-size: 0.78rem; font-weight: 400; letter-spacing: 0; }
+.muted { color: var(--faint); font-size: 0.88rem; line-height: 1.5; }
+.error { color: var(--danger); }
+.empty { margin: 0; padding: 1.25rem; border: 1px dashed var(--line); border-radius: 16px; color: var(--muted); line-height: 1.5; }
+
+/* ---- Cards (new games and my games) ---- */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 1rem; }
+.gameGrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 165px), 1fr)); }
 .card {
-  text-align: left;
-  border: 1px solid #33363f;
-  background: #25272e;
-  color: inherit;
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 0;
-  transition: transform 0.15s, border-color 0.15s;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--s1);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
-.card:hover { transform: translateY(-2px); border-color: #00a2ff; }
-.preview { height: 120px; }
-.cardBody { padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
-.cardBody span { color: #a8abb3; font-size: 0.88rem; }
-.list { display: flex; flex-direction: column; gap: 0.5rem; }
-.row {
-  display: flex; align-items: center; gap: 0.75rem;
-  background: #25272e; border: 1px solid #33363f; border-radius: 10px; padding: 0.4rem 0.6rem 0.4rem 1rem;
+.card:hover { transform: translateY(-3px); border-color: rgba(47, 207, 155, 0.6); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); }
+.cardOn, .cardOn:hover { border-color: var(--mint); box-shadow: 0 0 0 2px var(--mint); }
+.cardOn::after { content: '✓'; position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--mint); color: var(--mint-ink); font-weight: 800; }
+.preview { height: 150px; /* scenes keep their shape inside */ display: grid; place-items: center; padding: 0.6rem; border-bottom: 1px solid var(--line); }
+.scene { display: block; width: 100%; height: 100%; }
+.cardBody { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.95rem 1.05rem 1.1rem; }
+.cardBody strong { font-family: var(--display); font-weight: 700; font-size: 1.08rem; line-height: 1.25; overflow-wrap: anywhere; }
+.desc { color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+.meta { color: var(--faint); font-family: var(--mono); font-size: 0.74rem; }
+.badge, .badgeLinked { display: inline-flex; align-items: center; gap: 0.4rem; align-self: flex-start; margin-top: 0.2rem; color: var(--muted); font-family: var(--mono); font-size: 0.74rem; white-space: nowrap; }
+.badge::before, .badgeLinked::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--faint); }
+.badgeLinked { color: var(--ok); }
+.badgeLinked::before { background: var(--mint); }
+
+.gameCard { position: relative; display: flex; }
+.gameCard .card { flex: 1; }
+.cardDelete { position: absolute; top: 6px; right: 6px; min-width: 44px; min-height: 44px; border: none; border-radius: 12px; background: rgba(14, 16, 24, 0.72); color: #e5e7eb; font-size: 1rem; cursor: pointer; }
+.cardDelete:hover { background: rgba(255, 90, 95, 0.9); }
+
+/* ---- Create bar (sticks to the bottom of the screen so it is always in reach) ---- */
+.createBar {
+  position: sticky;
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(47, 207, 155, 0.5);
+  border-radius: 16px;
+  background: #19292a;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
 }
-.rowMain { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; color: inherit; text-decoration: none; min-height: 44px; justify-content: center; min-width: 0; }
-.muted { color: #8b8e97; font-size: 0.85rem; }
-.error { color: #ff7b72; }
-.badge, .badgeLinked { font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 999px; background: #33363f; white-space: nowrap; }
-.badgeLinked { background: rgba(0, 162, 255, 0.18); color: #6cc4ff; }
-.deleteBtn { min-width: 44px; min-height: 44px; border: none; background: transparent; color: #8b8e97; cursor: pointer; border-radius: 8px; }
-.deleteBtn:hover { background: #3a2a2a; color: #ff7b72; }
+.createName { flex: 1 1 14rem; min-width: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.nameInput { width: 100%; min-height: 44px; padding: 0.6rem 0.9rem; border: 1px solid var(--line); border-radius: 12px; background: var(--ink); color: inherit; font: inherit; font-size: 1rem; }
+.nameInput::placeholder { color: var(--faint); }
+.createBar .nameInput { max-width: none; }
 
-@media (max-width: 767px) {
-  .badge, .badgeLinked { display: none; }
-}
+/* ---- Buttons ---- */
+.accountBtn { min-height: 44px; padding: 0 1.2rem; border: none; border-radius: 12px; background: var(--mint); color: var(--mint-ink); font: inherit; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+.accountBtn:hover:not(:disabled) { filter: brightness(1.08); }
+.accountBtn:disabled { opacity: 0.55; cursor: default; }
+.accountBtnGhost { min-height: 44px; padding: 0 1rem; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: inherit; font: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+.accountBtnGhost:hover { border-color: var(--faint); }
+.accountLink { border: none; background: none; padding: 0; color: var(--ok); font: inherit; text-decoration: underline; cursor: pointer; }
+.accountOk { margin: 0; color: var(--ok); }
+.accountActions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-.disclaimer { margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid #343844; color: #8c93a3; font-size: 0.78rem; line-height: 1.5; }
-
-/* ---- Sign-in card ---- */
-.account { display: flex; flex-direction: column; gap: 0.6rem; margin: 0 0 1.5rem; padding: 1rem 1.1rem; border: 1px solid #343844; border-radius: 14px; background: #20232b; }
+/* ---- Account ---- */
+.account { display: flex; flex-direction: column; gap: 0.85rem; margin: 0.5rem 0 0; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 18px; background: var(--s1); }
 .accountRow { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
 .accountForm { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
 .accountForm .nameInput { flex: 1 1 15rem; min-width: 0; }
-.accountNote { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.75rem 0.9rem; border-radius: 10px; background: rgba(0, 162, 255, 0.12); font-size: 0.9rem; }
-.accountActions { display: flex; gap: 0.5rem; }
-.accountBtn { min-height: 44px; padding: 0 1.1rem; border: none; border-radius: 10px; background: #00a2ff; color: #fff; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
-.accountBtn:disabled { opacity: 0.6; cursor: default; }
-.accountBtnGhost { min-height: 44px; padding: 0 1rem; border: 1px solid #3a3d46; border-radius: 10px; background: transparent; color: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
-.accountLink { border: none; background: none; padding: 0; color: #8ab4f8; font: inherit; text-decoration: underline; cursor: pointer; }
-.accountOk { margin: 0; color: #4ade80; }
+.accountNote { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.75rem 0.9rem; border-radius: 12px; background: var(--s2); font-size: 0.9rem; line-height: 1.45; }
+.who { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.avatar { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px; background: var(--mint); color: var(--mint-ink); font-family: var(--display); font-weight: 800; font-size: 1.1rem; }
+.whoText { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.whoText strong { font-size: 0.98rem; overflow-wrap: anywhere; }
+.tier { align-self: flex-start; padding: 0.1rem 0.5rem; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.tier[data-tier='pro'] { color: #7ec3ff; border-color: rgba(126, 195, 255, 0.5); }
+.tier[data-tier='expert'] { color: var(--amber); border-color: rgba(255, 194, 51, 0.55); }
+.plan { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 0.75rem 1.5rem; }
+.meter { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0.35rem 0.75rem; font-size: 0.85rem; }
+.meterLabel { color: var(--muted); }
+.meterValue { font-family: var(--mono); font-size: 0.76rem; }
+.meterBar { grid-column: 1 / -1; display: block; height: 6px; overflow: hidden; border-radius: 99px; background: var(--s2); }
+.meterFill { display: block; height: 100%; border-radius: 99px; background: var(--mint); }
+.meterFill[data-high] { background: var(--amber); }
+.meterFill[data-over] { background: var(--danger); }
 
-/* ---- Create bar and clean-up ---- */
-.cardOn { outline: 3px solid #00a2ff; outline-offset: -3px; }
-.createBar, .cleanBar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 12px; background: rgba(0, 162, 255, 0.12); }
-.cleanBar { margin: 0 0 0.75rem; }
-.titleRow { margin: 2rem 0 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
-.titleRow .sectionTitle { margin: 0; }
-.tick { width: 24px; height: 24px; flex: none; accent-color: #00a2ff; }
+/* ---- Older versions and clean-up ---- */
+.cleanBar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin: 0 0 0.75rem; padding: 0.75rem 1rem; border-radius: 12px; background: var(--s2); }
+.older { margin-top: 1.5rem; padding: 0.25rem 1rem 1rem; border: 1px solid var(--line); border-radius: 18px; background: var(--s1); }
+.olderSummary { min-height: 44px; display: flex; align-items: center; gap: 0.6rem; list-style: none; cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 1.1rem; }
+.olderSummary::-webkit-details-marker { display: none; }
+.olderSummary::before { content: '▸'; color: var(--faint); transition: transform 0.15s ease; }
+.older[open] .olderSummary::before { transform: rotate(90deg); }
+.older .cleanBar { margin-top: 0.5rem; }
+.list { display: flex; flex-direction: column; gap: 0.5rem; }
+.row { display: flex; align-items: center; gap: 0.75rem; padding: 0.4rem 0.6rem 0.4rem 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--ink); }
+.rowMain { flex: 1; min-width: 0; min-height: 44px; display: flex; flex-direction: column; justify-content: center; gap: 0.15rem; color: inherit; text-decoration: none; }
+.rowMain strong { overflow-wrap: anywhere; }
+.row .badge, .row .badgeLinked { margin-top: 0; }
+.tick { width: 24px; height: 24px; flex: none; accent-color: var(--mint); }
+.deleteBtn { min-width: 44px; min-height: 44px; border: none; border-radius: 10px; background: transparent; color: var(--faint); cursor: pointer; }
+.deleteBtn:hover { background: #3a2a2e; color: var(--danger); }
+@media (max-width: 767px) { .row .badge, .row .badgeLinked { display: none; } }
 
-/* ---- Older places (collapsed) ---- */
-.older { border: 1px solid #343844; border-radius: 14px; padding: 0.25rem 1rem 1rem; background: #20232b; }
-.olderSummary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: #a8abb3; }
-.older .cleanBar { margin-top: 0; }
+.disclaimer { margin: 2.5rem 0 1rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--faint); font-size: 0.78rem; line-height: 1.5; }
 
-/* ---- My games cards (same look as New games) ---- */
-.gameCard { position: relative; display: flex; }
-.gameCard .card { flex: 1; display: block; text-decoration: none; }
-.cardDelete { position: absolute; top: 6px; right: 6px; min-width: 44px; min-height: 44px; border: none; border-radius: 10px; background: rgba(17, 20, 31, 0.7); color: #e5e7eb; cursor: pointer; font-size: 1rem; }
-.cardDelete:hover { background: rgba(255, 90, 95, 0.85); }
+/* ---- Keyboard focus and reduced motion ---- */
+.card:focus-visible, .rowMain:focus-visible, .docsLink:focus-visible, .brand:focus-visible, .deleteBtn:focus-visible, .cardDelete:focus-visible,
+.accountBtn:focus-visible, .accountBtnGhost:focus-visible, .accountLink:focus-visible, .nameInput:focus-visible, .tick:focus-visible, .olderSummary:focus-visible {
+  outline: 3px solid var(--amber);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .olderSummary::before { transition: none; }
+  .card:hover { transform: none; }
+}
