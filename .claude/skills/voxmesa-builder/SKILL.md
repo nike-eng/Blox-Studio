@@ -98,6 +98,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-app/viewport-height.ts
 - ./blox-studio/blox-studio-app/viewport.tsx
 - ./blox-studio/blox-studio-app/vite.config.js
+- ./blox-studio/blox-studio-app/voxel-scene.tsx
 - ./blox-studio/blox-studio-platform/blox-studio-platform.bit-app.tsx
 - ./blox-studio/blox-studio-platform/index.ts
 - ./blox-studio/blox-studio-service/auth.spec.ts
