@@ -1,6 +1,17 @@
 import { useId } from 'react';
 import type { PlaceThumbData } from './studio-api.js';
 
+/** Sky colours for a time of day, matching the editor's sky: blue by day, warm near sunrise and sunset, dark at night. */
+function skyFor(clock: number) {
+  const night = clock < 5 || clock > 19;
+  const edge = clock >= 5 && clock < 7.5 ? (clock - 5) / 2.5 : clock > 16.5 && clock <= 19 ? (19 - clock) / 2.5 : 1;
+  if (night) return { stops: ['#050814', '#101835', '#1a2240'], sun: null as null | [number, number, string], stars: true };
+  const warm = 1 - Math.min(1, edge);
+  const stops = warm > 0.35 ? ['#2a2f78', '#b45a8a', '#ffa070'] : ['#2f7fe0', '#7fbcf0', '#bfe3ff'];
+  const t = (clock - 6) / 12; // 0 sunrise .. 1 sunset
+  return { stops, sun: [0.12 + 0.76 * t, 0.62 - Math.sin(Math.PI * Math.max(0, Math.min(1, t))) * 0.5, warm > 0.35 ? '#ffd9a0' : '#fff3d6'] as [number, number, string], stars: false };
+}
+
 const W = 320, H = 200, PAD = 22;
 
 /** Mix a hex colour toward black (k < 1) or white (k > 1). */
@@ -40,17 +51,21 @@ export function PlaceThumb({ thumb, className }: { thumb: PlaceThumbData | undef
   // Far blocks first so near blocks cover them.
   const sorted = [...boxes].sort((a, b) => a.x + a.z - (b.x + b.z) || a.y - b.y);
   const ground = thumb?.ground;
+  const sky = skyFor(thumb?.clock ?? 14);
 
   return (
     <svg className={className} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" role="img" aria-hidden="true">
       <defs>
         <linearGradient id={`${uid}-sky`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1d2250" />
-          <stop offset="0.55" stopColor="#7a3a74" />
-          <stop offset="1" stopColor="#ff8f6b" />
+          <stop offset="0" stopColor={sky.stops[0]} />
+          <stop offset="0.6" stopColor={sky.stops[1]} />
+          <stop offset="1" stopColor={sky.stops[2]} />
         </linearGradient>
       </defs>
       <rect width={W} height={H} fill={`url(#${uid}-sky)`} />
+      {sky.sun && <circle cx={sky.sun[0] * W} cy={sky.sun[1] * H} r="12" fill={sky.sun[2]} opacity="0.95" />}
+      {sky.stars && [[40, 30], [90, 70], [150, 22], [210, 58], [270, 28], [300, 80], [120, 110], [60, 130]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r={i % 3 ? 1 : 1.5} fill="#e8ecff" opacity="0.8" />)}
+      {sky.stars && <circle cx={W * 0.82} cy={H * 0.22} r="9" fill="#eef0ff" opacity="0.9" />}
       {ground && <ellipse cx={W / 2} cy={H * 0.7} rx={W * 0.62} ry={H * 0.2} fill={shade(ground, 0.55)} opacity="0.55" />}
       {sorted.map((b, i) => {
         const hx = b.sx / 2, hy = b.sy / 2, hz = b.sz / 2;

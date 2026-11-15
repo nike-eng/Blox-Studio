@@ -24,7 +24,7 @@ export type ProjectSummary = {
 };
 
 /** One block: x, y, z, sizeX, sizeY, sizeZ, colour hex (no #), shape (0 block, 1 ball). */
-export type PlaceThumbData = { parts: [number, number, number, number, number, number, string, number][]; ground: string | null };
+export type PlaceThumbData = { parts: [number, number, number, number, number, number, string, number][]; ground: string | null; clock?: number };
 
 /** Who is signed in, their plan and how much of it is used. `null` limits mean unlimited. */
 export type AccountInfo = {
