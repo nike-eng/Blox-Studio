@@ -3,7 +3,7 @@ import fs from 'node:fs';
 
 const instances = JSON.parse(fs.readFileSync(new URL('./fixtures/obby-instances.json', import.meta.url), 'utf8'));
 const project = { id: 'a'.repeat(24), name: 'Test obby', instances, universeId: '', placeId: '', publishHistory: [], updatedAt: new Date().toISOString(), createdAt: new Date().toISOString() };
-const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
+const cors = { 'access-control-allow-origin': 'http://localhost:4173', 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'content-type, authorization, x-owner-key, x-owner', 'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS' };
 
 test('editor opens a place and draws the 3D world', async ({ page }) => {
   const errors: string[] = [];
@@ -11,7 +11,7 @@ test('editor opens a place and draws the 3D world', async ({ page }) => {
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log('PAGE', m.type(), m.text().slice(0, 300)); });
   await page.route('http://api.test/**', async (route) => {
     const req = route.request();
-    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': req.headers()['access-control-request-headers'] || cors['access-control-allow-headers'] } });
     const url = new URL(req.url());
     if (url.pathname.startsWith('/projects/') && req.method() !== 'DELETE') return route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify(project) });
     return route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: '{}' });
