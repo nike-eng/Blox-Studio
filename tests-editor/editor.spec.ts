@@ -53,5 +53,21 @@ test('editor stays light with 1200 parts', async ({ page }) => {
   const s = await stats(page);
   console.log('STATS stress', JSON.stringify(s));
   expect(s).toBeTruthy();
+  expect(s!.calls).toBeLessThan(100);
+
+  // Batched parts must still be clickable: some click on the field should select one and show its properties.
+  const box = (await page.locator('canvas').first().boundingBox())!;
+  let picked = false;
+  for (const fy of [0.55, 0.65, 0.75, 0.85, 0.45]) {
+    for (const fx of [0.3, 0.4, 0.5, 0.6, 0.7]) {
+      await page.mouse.click(box.x + box.width * fx, box.y + box.height * fy);
+      await page.waitForTimeout(250);
+      if (!(await page.getByText('Select an object in the viewport').isVisible())) { picked = true; break; }
+    }
+    if (picked) break;
+  }
+  console.log('PICKED', picked);
+  await printShot(page, 'stress-picked');
+  expect(picked).toBe(true);
   expect(errors).toEqual([]);
 });
