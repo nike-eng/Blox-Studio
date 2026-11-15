@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { REAL_LUAU_MARK, runRealLuau } from './luau-real.js';
 import { SCRIPT_CLASSES, runStudioScript, type Interpreter, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { studioApi, ApiError, type Project } from './studio-api.js';
 import { usePlaceEditor } from './use-place-editor.js';
@@ -148,6 +149,21 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     if (runner.current) return;
     setOutputOpen(true);
     if (echo) log('info', `> ${source.split('\n')[0]}${source.includes('\n') ? ' …' : ''}`);
+    if (REAL_LUAU_MARK.test(source)) {
+      // Beta: real Luau (WebAssembly). It can print and calculate; it cannot change the place yet.
+      setRunning(true);
+      try {
+        const r = await runRealLuau(source, chunk);
+        for (const line of r.output.split('\n').filter(Boolean)) log('print', line);
+        if (r.error) log('error', r.error.split('\n')[0]);
+        else log('info', 'Ran with real Luau (beta).');
+      } catch {
+        log('error', 'Real Luau could not load. Check your connection and try again.');
+      } finally {
+        setRunning(false);
+      }
+      return;
+    }
     const base = latest.current;
     setRunning(true);
     try {
