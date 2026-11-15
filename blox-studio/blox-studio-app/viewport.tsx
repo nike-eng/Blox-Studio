@@ -211,6 +211,7 @@ export function Viewport({ editor, insertPointRef, focusRef, snap = { studs: 1, 
   return (
     <Canvas
       shadows
+      frameloop="demand"
       dpr={[1, 1.5]}
       gl={{ powerPreference: 'high-performance', toneMapping: THREE.NeutralToneMapping }}
       camera={{ position: start.current.camera, fov: 60, near: 0.5, far: 5000 }}
