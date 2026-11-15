@@ -186,18 +186,43 @@ export function PlaytestWorld({ runtime, queue, input, session, onEvent, playerP
   useEffect(() => {
     const el = gl.domElement;
     const c = cam.current;
+    // Fingers (or the right mouse button) on the screen: one finger turns the camera, two fingers pinch to zoom.
+    const pointers = new Map<number, { x: number; y: number }>();
+    let pinch = 0;
+    const MIN_ZOOM = 0.5; // all the way in is first person, like Roblox
+    const pinchSize = () => { const [p, q] = [...pointers.values()]; return Math.hypot(p.x - q.x, p.y - q.y); };
     const down = (e: PointerEvent) => {
       if (e.pointerType === 'mouse' && e.button !== 2) return;
-      c.dragging = true; c.lx = e.clientX; c.ly = e.clientY; el.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      c.dragging = pointers.size === 1; c.lx = e.clientX; c.ly = e.clientY;
+      pinch = pointers.size === 2 ? pinchSize() : 0;
+      try { el.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
     };
     const move = (e: PointerEvent) => {
+      const p = pointers.get(e.pointerId);
+      if (!p) return;
+      const touch = e.pointerType !== 'mouse';
+      if (pointers.size === 2) {
+        p.x = e.clientX; p.y = e.clientY;
+        const d = pinchSize();
+        if (pinch > 0 && d > 0) c.dist = Math.min(64, Math.max(MIN_ZOOM, c.dist * (pinch / d)));
+        pinch = d;
+        return;
+      }
       if (!c.dragging) return;
-      c.yaw -= (e.clientX - c.lx) * 0.006;
-      c.pitch = Math.min(1.35, Math.max(-1.2, c.pitch + (e.clientY - c.ly) * 0.005));
-      c.lx = e.clientX; c.ly = e.clientY;
+      // Touch turns faster than a mouse because a thumb covers less distance.
+      c.yaw -= (e.clientX - c.lx) * (touch ? 0.013 : 0.0085);
+      c.pitch = Math.min(1.35, Math.max(-1.2, c.pitch + (e.clientY - c.ly) * (touch ? 0.011 : 0.007)));
+      c.lx = e.clientX; c.ly = e.clientY; p.x = e.clientX; p.y = e.clientY;
     };
-    const up = () => { c.dragging = false; };
-    const wheel = (e: WheelEvent) => { e.preventDefault(); c.dist = Math.min(64, Math.max(4, c.dist * (1 + Math.sign(e.deltaY) * 0.12))); };
+    const up = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      pinch = 0;
+      c.dragging = pointers.size === 1;
+      const rest = [...pointers.values()][0];
+      if (rest) { c.lx = rest.x; c.ly = rest.y; }
+    };
+    const wheel = (e: WheelEvent) => { e.preventDefault(); c.dist = Math.min(64, Math.max(MIN_ZOOM, c.dist * (1 + Math.sign(e.deltaY) * 0.15))); };
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', up);
@@ -462,7 +487,9 @@ export function PlaytestWorld({ runtime, queue, input, session, onEvent, playerP
       camRay,
       c.dist, true, rapier.QueryFilterFlags.EXCLUDE_SENSORS | rapier.QueryFilterFlags.EXCLUDE_KINEMATIC, undefined, collider.current || undefined, body.current || undefined,
     );
-    if (hit) dist = Math.max(2, hit.timeOfImpact - 0.6);
+    if (hit) dist = Math.min(c.dist, Math.max(0.6, hit.timeOfImpact - 0.6));
+    // Zoomed all the way in = first person: hide the body so the camera is not inside it.
+    a.visible = c.dist > 1.2;
     camera.position.copy(target.current).addScaledVector(offset, dist);
     camera.lookAt(target.current);
   });
