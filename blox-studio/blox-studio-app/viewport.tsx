@@ -19,7 +19,12 @@ const BEHAVIOR_BADGE: Record<string, { label: string; color: string }> = {
 
 /** Publishes draw-call counts on `window.__voxStats` so automatic checks can measure how heavy a scene is. */
 function StatsProbe() {
-  useFrame(({ gl }) => { (window as unknown as { __voxStats?: unknown }).__voxStats = { calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries }; });
+  // Count a whole frame (world + axis gizmo): keep the counters running, read them, then zero them for the next frame.
+  useFrame(({ gl }) => {
+    gl.info.autoReset = false;
+    (window as unknown as { __voxStats?: unknown }).__voxStats = { calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries };
+    gl.info.reset();
+  });
   return null;
 }
 
