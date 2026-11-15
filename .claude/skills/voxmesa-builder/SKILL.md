@@ -144,6 +144,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./package-lock.json
 - ./package.json
 - ./playwright.config.ts
+- ./playwright.editor.config.ts
 - ./pnpm-lock.yaml
 - ./render.yaml
 - ./server/README.md
@@ -160,6 +161,8 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./standalone/static/sitemap.xml
 - ./standalone/vite.config.js
 - ./standalone/wrangler.jsonc
+- ./tests-editor/editor.spec.ts
+- ./tests-editor/fixtures/obby-instances.json
 - ./tests/smoke.spec.ts
 - ./tsconfig.json
 - ./workspace.jsonc
