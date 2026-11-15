@@ -67,6 +67,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-app/instanced-parts.tsx
 - ./blox-studio/blox-studio-app/landing-page.module.css
 - ./blox-studio/blox-studio-app/landing-page.tsx
+- ./blox-studio/blox-studio-app/luau-real.ts
 - ./blox-studio/blox-studio-app/material-textures.ts
 - ./blox-studio/blox-studio-app/output-panel.module.css
 - ./blox-studio/blox-studio-app/output-panel.tsx
@@ -160,6 +161,8 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./standalone/static/favicon.svg
 - ./standalone/static/how-it-works.jpg
 - ./standalone/static/how-it-works.mp4
+- ./standalone/static/luau/vox_luau.js
+- ./standalone/static/luau/vox_luau.wasm
 - ./standalone/static/robots.txt
 - ./standalone/static/sitemap.xml
 - ./standalone/vite.config.js
