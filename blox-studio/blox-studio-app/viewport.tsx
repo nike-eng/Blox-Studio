@@ -7,6 +7,7 @@ import type { PlaceEditor } from './use-place-editor.js';
 import { subtreeIds } from './use-place-editor.js';
 import { DEG, PartVisual, geometryFor } from './part-visual.js';
 import { SceneEnvironment } from './scene-environment.js';
+import { BatchedParts, canBatch } from './instanced-parts.js';
 import styles from './studio.module.css';
 
 const BEHAVIOR_BADGE: Record<string, { label: string; color: string }> = {
@@ -113,6 +114,14 @@ export function Viewport({ editor, insertPointRef, focusRef, snap = { studs: 1, 
   const parts = instances.filter((i) => PART_CLASSES.includes(i.className) && workspaceIds.has(i.id));
   const lighting = instances.find((i) => i.className === 'Lighting');
   const selectedIsPart = parts.some((p) => p.id === selectedId);
+  // Plain parts that are not being edited are drawn in batches (far fewer draw calls); the rest one by one.
+  const multiKey = editor.multiIds.join(',');
+  const { batched, single } = useMemo(() => {
+    const keep = new Set(editor.multiIds);
+    const b: PlaceInstance[] = [], s: PlaceInstance[] = [];
+    for (const inst of parts) (canBatch(inst) && inst.id !== selectedId && !keep.has(inst.id) ? b : s).push(inst);
+    return { batched: b, single: s };
+  }, [instances, selectedId, multiKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const byId = editor.byId;
   const pointLights = instances
     .filter((i) => i.className === 'PointLight' && i.parentId)
@@ -209,7 +218,8 @@ export function Viewport({ editor, insertPointRef, focusRef, snap = { studs: 1, 
     >
       <SceneEnvironment lighting={lighting} focus={[0, 0, -60]} pointLights={pointLights} />
       <StatsProbe />
-      {parts.map((inst) => (
+      <BatchedParts parts={batched} onPick={(id, add) => (add || multiMode ? editor.toggleMulti(id) : setSelectedId(id))} />
+      {single.map((inst) => (
         <EditablePart
           key={inst.id}
           inst={inst}
