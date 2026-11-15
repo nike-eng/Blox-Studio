@@ -1,0 +1,34 @@
+name: Build real Luau (WebAssembly)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths: [ 'luau-wasm/**', '.github/workflows/luau-wasm.yml' ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+      - name: Build Luau to WebAssembly
+        run: ./luau-wasm/build.sh
+      - name: Save the build into the site
+        run: |
+          mkdir -p standalone/static/luau
+          cp luau-wasm/dist/vox_luau.js luau-wasm/dist/vox_luau.wasm standalone/static/luau/
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add standalone/static/luau
+          if git diff --cached --quiet; then echo "No change"; else
+            git commit -m "Build real Luau (WebAssembly)"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
