@@ -118,6 +118,24 @@ export function ProjectsPage() {
   const latest = games.reduce<ProjectSummary | null>((a, p) => (!a || new Date(p.updatedAt) > new Date(a.updatedAt) ? p : a), null);
   const jumpToNew = () => document.getElementById('new-games')?.scrollIntoView({ behavior: 'smooth' });
 
+  const how = (
+    <section aria-labelledby="how-title">
+      <h2 className={styles.sectionTitle} id="how-title">How it works</h2>
+      <p className={styles.hint}>Four steps from an empty place to your own Roblox game. 14 seconds, no sound.</p>
+      <div className={styles.how}>
+        <video className={styles.film} controls muted playsInline preload="none" poster="/how-it-works.jpg" aria-label="How VoxMesa works: place parts, write Lua, press Play, publish">
+          <source src="/how-it-works.mp4" type="video/mp4" />
+        </video>
+        <ol className={styles.steps}>
+          <li><strong>Place parts</strong><span>Drop platforms, ramps and spawn points.</span></li>
+          <li><strong>Write Lua</strong><span>Scripts run right in your browser.</span></li>
+          <li><strong>Press Play</strong><span>Test the course on the spot.</span></li>
+          <li><strong>Publish</strong><span>Send it to your Roblox experience or export a file.</span></li>
+        </ol>
+      </div>
+    </section>
+  );
+
   return (
     <div className={styles.home}>
       <header className={styles.top}>
@@ -140,6 +158,7 @@ export function ProjectsPage() {
         <div className={styles.heroArt}><WorldScene scene={HERO_SCENE} className={styles.scene} twinkleClass={styles.twinkle} driftClass={styles.drift} sunClass={styles.glow} /></div>
       </section>
       <AccountCard onChange={load} refreshKey={projects?.length ?? 0} />
+      {projects && games.length === 0 && how}
       <section>
         <h2 className={styles.sectionTitle} id="new-games">New games</h2>
         <p className={styles.hint}>Pick a starter, give it a name and press Create.</p>
@@ -177,6 +196,7 @@ export function ProjectsPage() {
           </p>
         )}
       </section>
+      {(!projects || games.length > 0) && how}
       {older.length > 0 && (
         <section>
           <details className={styles.older}>

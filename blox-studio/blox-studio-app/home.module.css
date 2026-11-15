@@ -120,6 +120,16 @@
 .error { color: var(--danger); }
 .empty { margin: 0; padding: 1.25rem; border: 1px dashed var(--line); border-radius: 16px; color: var(--muted); line-height: 1.5; }
 
+/* ---- How it works: a short silent film and the same four steps as text ---- */
+.how { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 1.5rem; align-items: center; }
+.film { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--line); border-radius: 20px; background: var(--s1); }
+.steps { display: flex; flex-direction: column; gap: 1rem; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.steps li { position: relative; display: flex; flex-direction: column; gap: 0.15rem; padding-left: 2.6rem; counter-increment: step; }
+.steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 1.9rem; height: 1.9rem; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 0.9rem; }
+.steps strong { font-family: var(--display); font-size: 1.05rem; }
+.steps span { color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+@media (max-width: 799px) { .how { grid-template-columns: minmax(0, 1fr); } }
+
 /* ---- Cards (new games and my games) ---- */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 1rem; }
 .gameGrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 165px), 1fr)); }
