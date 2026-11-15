@@ -71,6 +71,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-app/output-panel.tsx
 - ./blox-studio/blox-studio-app/part-visual.tsx
 - ./blox-studio/blox-studio-app/particle-burst.tsx
+- ./blox-studio/blox-studio-app/place-thumb.tsx
 - ./blox-studio/blox-studio-app/playtest-avatar.tsx
 - ./blox-studio/blox-studio-app/playtest-runtime.ts
 - ./blox-studio/blox-studio-app/playtest-world.tsx
@@ -113,6 +114,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-service/mcp.ts
 - ./blox-studio/blox-studio-service/project-repository.ts
 - ./blox-studio/blox-studio-service/roblox-publisher.ts
+- ./blox-studio/blox-studio-service/thumb.ts
 - ./blox-studio/blox-studio-service/tiers.spec.ts
 - ./blox-studio/blox-studio-service/tiers.ts
 - ./blox-studio/blox-studio-service/untouched.spec.ts
