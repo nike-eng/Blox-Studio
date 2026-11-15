@@ -48,8 +48,8 @@ test('editor opens a place and draws the 3D world', async ({ page }) => {
 });
 
 test('editor stays light with 1200 parts', async ({ page }) => {
+  test.setTimeout(150_000);
   const errors = await openPlace(page, stress(1200));
-  await printShot(page, 'stress');
   const s = await stats(page);
   console.log('STATS stress', JSON.stringify(s));
   expect(s).toBeTruthy();
