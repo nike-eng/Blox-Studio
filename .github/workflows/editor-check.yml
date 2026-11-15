@@ -1,0 +1,38 @@
+name: Editor build and 3D check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  editor:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install test tools
+        run: npm install
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build the editor
+        working-directory: standalone
+        env:
+          VITE_SERVICE_URL: http://api.test
+        run: npm install && npm run build
+      - name: Open the editor and check the 3D world
+        run: npx playwright test -c playwright.editor.config.ts
+        env:
+          CI: true
+      - name: Keep the screenshot
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editor-screenshot
+          path: editor-results/
+          retention-days: 7
