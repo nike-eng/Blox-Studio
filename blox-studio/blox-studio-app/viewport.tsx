@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
-import { Canvas, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, TransformControls, GizmoHelper, GizmoViewport, Edges, Html } from '@react-three/drei';
 import { PART_CLASSES, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import type { PlaceEditor } from './use-place-editor.js';
@@ -16,6 +16,12 @@ const BEHAVIOR_BADGE: Record<string, { label: string; color: string }> = {
   jumpPad: { label: '⇪ Jump pad', color: '#4ade80' },
   fade: { label: '◌ Disappears', color: '#38bdf8' },
 };
+
+/** Publishes draw-call counts on `window.__voxStats` so automatic checks can measure how heavy a scene is. */
+function StatsProbe() {
+  useFrame(({ gl }) => { (window as unknown as { __voxStats?: unknown }).__voxStats = { calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries }; });
+  return null;
+}
 
 type EditablePartProps = {
   inst: PlaceInstance;
@@ -197,6 +203,7 @@ export function Viewport({ editor, insertPointRef, focusRef, snap = { studs: 1, 
       onPointerMissed={() => { if (!draggingRef.current) setSelectedId(null); }}
     >
       <SceneEnvironment lighting={lighting} focus={[0, 0, -60]} pointLights={pointLights} />
+      <StatsProbe />
       {parts.map((inst) => (
         <EditablePart
           key={inst.id}
