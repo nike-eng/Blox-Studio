@@ -142,6 +142,8 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./landing/sitemap.xml
 - ./landing/styles.css
 - ./landing/vercel.json
+- ./luau-wasm/build.sh
+- ./luau-wasm/vox_luau.cpp
 - ./package-lock.json
 - ./package.json
 - ./playwright.config.ts
