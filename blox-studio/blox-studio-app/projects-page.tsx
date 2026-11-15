@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
-import { studioApi, type ProjectSummary } from './studio-api.js';
+import { studioApi, type ProjectSummary, type PlaceThumbData } from './studio-api.js';
 import { BrandMark } from './brand-mark.js';
 import { AccountCard } from './account-card.js';
 import { Icon } from './icons.js';
+import { PlaceThumb } from './place-thumb.js';
 import { WorldScene, TEMPLATE_SCENES, HERO_SCENE, gameScene, type Scene } from './world-scene.js';
 import styles from './home.module.css';
 
@@ -19,8 +20,9 @@ const edited = (p: ProjectSummary) => `Edited ${new Date(p.updatedAt).toLocaleDa
 const statusOf = (p: ProjectSummary) => (p.publishHistory[0] ? `v${p.publishHistory[0].versionNumber} on Roblox` : p.placeId ? 'Linked' : 'Not published');
 
 /** The picture at the top of a card. */
-function Preview({ scene, className, tag }: { scene: Scene; className: string; tag?: string }) {
-  return <div className={className} style={{ background: scene.bg }}><WorldScene scene={scene} className={styles.scene} />{tag && <span className={styles.tag}>{tag}</span>}</div>;
+function Preview({ scene, className, tag, thumb }: { scene: Scene; className: string; tag?: string; thumb?: PlaceThumbData }) {
+  const real = thumb && thumb.parts.length > 0;
+  return <div className={className} style={{ background: scene.bg }}>{real ? <PlaceThumb thumb={thumb} className={styles.scene} /> : <WorldScene scene={scene} className={styles.scene} />}{tag && <span className={styles.tag}>{tag}</span>}</div>;
 }
 
 
@@ -77,7 +79,7 @@ export function ProjectsPage() {
   const renderCard = (p: ProjectSummary) => (
     <div key={p.id} className={styles.gameCard}>
       <Link to={`/studio/${p.id}`} className={styles.card}>
-        <Preview scene={gameScene(p.id)} className={styles.preview} />
+        <Preview scene={gameScene(p.id)} className={styles.preview} thumb={p.thumb} />
         <div className={styles.cardBody}>
           <strong>{p.name}</strong>
           <span className={styles.meta}>{edited(p)}</span>

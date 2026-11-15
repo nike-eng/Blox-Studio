@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import { createHash, randomBytes } from 'node:crypto';
 import { isUntouchedTemplate, PRISTINE_V, whyNotTemplate } from './untouched.js';
+import { makeThumb, THUMB_V, type Thumb } from './thumb.js';
 import { createPlaceTemplate, type PlaceInstance, type PlaceTemplate } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 
 /**
@@ -29,6 +30,8 @@ export type Project = {
   createdAt: string;
   /** Still exactly a starter template (nothing changed). Only set on lists. */
   pristine?: boolean;
+  /** A tiny picture of what is built here, for the home page. */
+  thumb?: Thumb;
 };
 
 const ProjectSchema = new Schema(
@@ -43,6 +46,8 @@ const ProjectSchema = new Schema(
     /** True while the place is still exactly a starter template; pristineV says which rule version worked that out. */
     pristine: Boolean,
     pristineV: Number,
+    thumb: Schema.Types.Mixed,
+    thumbV: Number,
     publishHistory: { type: [Schema.Types.Mixed], default: [] },
   },
   { timestamps: true, minimize: false }
@@ -60,6 +65,7 @@ function toProject(doc: any): Project {
     universeId: doc.universeId || '',
     placeId: doc.placeId || '',
     publishHistory: doc.publishHistory || [],
+    thumb: doc.thumb || undefined,
     updatedAt: new Date(doc.updatedAt).toISOString(),
     createdAt: new Date(doc.createdAt).toISOString(),
   };
@@ -91,6 +97,7 @@ export class ProjectRepository {
   async list(ownerHash: string): Promise<Omit<Project, 'instances'>[]> {
     await ProjectModel.updateMany({ ownerHash: { $exists: false } }, { $set: { ownerHash } });
     await this.backfillPristine(ownerHash);
+    await this.backfillThumbs(ownerHash);
     const docs = await ProjectModel.find({ ownerHash }, { instances: 0 }).sort({ updatedAt: -1 }).lean();
     return docs.map((d) => {
       const { instances, ...rest } = toProject(d);
@@ -103,6 +110,14 @@ export class ProjectRepository {
     const docs = await ProjectModel.find({ ownerHash, pristineV: { $ne: PRISTINE_V } }, { instances: 1 }).lean();
     if (!docs.length) return;
     const ops = docs.map((d) => ({ updateOne: { filter: { _id: d._id }, update: { $set: { pristine: isUntouchedTemplate((d.instances || []) as PlaceInstance[]), pristineV: PRISTINE_V } } } }));
+    await ProjectModel.bulkWrite(ops, { timestamps: false });
+  }
+
+  /** Draws the small picture for places that do not have an up-to-date one yet (done once per place). */
+  private async backfillThumbs(ownerHash: string): Promise<void> {
+    const docs = await ProjectModel.find({ ownerHash, thumbV: { $ne: THUMB_V } }, { instances: 1 }).limit(100).lean();
+    if (!docs.length) return;
+    const ops = docs.map((d) => ({ updateOne: { filter: { _id: d._id }, update: { $set: { thumb: makeThumb((d.instances || []) as PlaceInstance[]), thumbV: THUMB_V } } } }));
     await ProjectModel.bulkWrite(ops, { timestamps: false });
   }
 
@@ -122,7 +137,7 @@ export class ProjectRepository {
 
   /** Creates a new project from a template. */
   async create(name: string, template: PlaceTemplate = 'baseplate', ownerHash = ''): Promise<Project> {
-    const doc = await ProjectModel.create({ name, instances: createPlaceTemplate(template), pristine: true, pristineV: PRISTINE_V, ...(ownerHash ? { ownerHash } : {}) });
+    const doc = await ProjectModel.create({ name, instances: createPlaceTemplate(template), thumb: makeThumb(createPlaceTemplate(template)), thumbV: THUMB_V, pristine: true, pristineV: PRISTINE_V, ...(ownerHash ? { ownerHash } : {}) });
     return toProject(doc.toObject());
   }
 
@@ -130,7 +145,8 @@ export class ProjectRepository {
   async update(id: string, patch: Partial<Pick<Project, 'name' | 'instances' | 'universeId' | 'placeId'>>): Promise<Project | null> {
     if (!mongoose.isValidObjectId(id)) return null;
     // Changing the content or the name means someone cares about this place: it is no longer an unused starter copy.
-    const set = patch.instances || patch.name ? { ...patch, pristine: false, pristineV: PRISTINE_V } : patch;
+    const base = patch.instances || patch.name ? { ...patch, pristine: false, pristineV: PRISTINE_V } : { ...patch };
+    const set = patch.instances ? { ...base, thumb: makeThumb(patch.instances), thumbV: THUMB_V } : base;
     const doc = await ProjectModel.findByIdAndUpdate(id, { $set: set }, { new: true }).lean();
     return doc ? toProject(doc) : null;
   }

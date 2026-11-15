@@ -19,7 +19,12 @@ export type ProjectSummary = {
   createdAt: string;
   /** Still exactly a starter template. */
   pristine?: boolean;
+  /** A tiny picture of what is built in the place. */
+  thumb?: PlaceThumbData;
 };
+
+/** One block: x, y, z, sizeX, sizeY, sizeZ, colour hex (no #), shape (0 block, 1 ball). */
+export type PlaceThumbData = { parts: [number, number, number, number, number, number, string, number][]; ground: string | null };
 
 /** Who is signed in, their plan and how much of it is used. `null` limits mean unlimited. */
 export type AccountInfo = {
