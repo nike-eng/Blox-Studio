@@ -8,6 +8,7 @@ const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers
 test('editor opens a place and draws the 3D world', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log('PAGE', m.type(), m.text().slice(0, 300)); });
   await page.route('http://api.test/**', async (route) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
@@ -18,9 +19,12 @@ test('editor opens a place and draws the 3D world', async ({ page }) => {
 
   await page.goto(`/studio/${project.id}`);
   const canvas = page.locator('canvas').first();
-  await expect(canvas).toBeVisible({ timeout: 60_000 });
-  await page.waitForTimeout(6000); // let textures and shadows settle
-  await page.screenshot({ path: 'editor-results/editor.png' });
+  await page.waitForTimeout(12000); // let the page, textures and shadows settle
+  // Print the screenshot into the log (artifacts cannot be downloaded from where Claude works), plus the page text.
+  const shot = await page.screenshot({ type: 'jpeg', quality: 55 });
+  console.log('TEXT', (await page.evaluate(() => document.body.innerText)).slice(0, 400).replace(/\n/g, ' | '));
+  console.log('SHOT:' + shot.toString('base64'));
+  await expect(canvas).toBeVisible({ timeout: 5000 });
 
   // The canvas must not be a flat single colour.
   const varied = await canvas.evaluate((c: HTMLCanvasElement) => {
