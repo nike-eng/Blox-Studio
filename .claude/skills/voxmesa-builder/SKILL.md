@@ -151,6 +151,8 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./standalone/prepare.mjs
 - ./standalone/static/_redirects
 - ./standalone/static/favicon.svg
+- ./standalone/static/how-it-works.jpg
+- ./standalone/static/how-it-works.mp4
 - ./standalone/static/robots.txt
 - ./standalone/static/sitemap.xml
 - ./standalone/vite.config.js
