@@ -64,6 +64,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-app/icons.tsx
 - ./blox-studio/blox-studio-app/index.html
 - ./blox-studio/blox-studio-app/index.ts
+- ./blox-studio/blox-studio-app/instanced-parts.tsx
 - ./blox-studio/blox-studio-app/landing-page.module.css
 - ./blox-studio/blox-studio-app/landing-page.tsx
 - ./blox-studio/blox-studio-app/material-textures.ts
