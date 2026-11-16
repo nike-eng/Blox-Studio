@@ -58,6 +58,8 @@ static int l_host(lua_State* L) {
 static const char* kMutableGlobals[] = {"typeof", nullptr};
 static char* compileScript(const char* source, size_t* size) {
   lua_CompileOptions opts = {};
+  opts.optimizationLevel = 1;
+  opts.debugLevel = 1;
   opts.mutableGlobals = kMutableGlobals;
   return luau_compile(source, strlen(source), &opts, size);
 }

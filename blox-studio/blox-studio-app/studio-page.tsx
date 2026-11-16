@@ -150,13 +150,17 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     setOutputOpen(true);
     if (echo) log('info', `> ${source.split('\n')[0]}${source.includes('\n') ? ' …' : ''}`);
     if (REAL_LUAU_MARK.test(source)) {
-      // Beta: real Luau (WebAssembly). It can print and calculate; it cannot change the place yet.
+      // Beta: real Luau (WebAssembly). Changes it makes to the place land as ONE undo step, like the normal runner.
+      const base = latest.current;
       setRunning(true);
       try {
-        const r = await runRealLuau(source, chunk);
-        for (const line of r.output.split('\n').filter(Boolean)) log('print', line);
+        const r = await runRealLuau(source, chunk, base, log, scriptId);
         if (r.error) log('error', r.error.split('\n')[0]);
         else log('info', 'Ran with real Luau (beta).');
+        if (r.changed) {
+          if (latest.current !== base) log('warn', 'You edited the place while the script was running, so its changes were not applied. Run it again.');
+          else editor.setAll(r.instances);
+        }
       } catch {
         log('error', 'Real Luau could not load. Check your connection and try again.');
       } finally {
