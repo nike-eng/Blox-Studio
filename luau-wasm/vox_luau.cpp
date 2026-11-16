@@ -53,6 +53,15 @@ static int l_host(lua_State* L) {
   return 1;
 }
 
+// Lets the prelude give vectors extra members (Magnitude, Unit, Dot ...): __setvecmeta(metatable).
+static int l_setvecmeta(lua_State* L) {
+  luaL_checktype(L, 1, LUA_TTABLE);
+  lua_pushvector(L, 0.f, 0.f, 0.f);
+  lua_pushvalue(L, 1);
+  lua_setmetatable(L, -2);
+  return 0;
+}
+
 extern "C" {
 
 EMSCRIPTEN_KEEPALIVE int vox_init() {
@@ -63,6 +72,29 @@ EMSCRIPTEN_KEEPALIVE int vox_init() {
   lua_setglobal(G, "print");
   lua_pushcfunction(G, l_host, "__host");
   lua_setglobal(G, "__host");
+  lua_pushcfunction(G, l_setvecmeta, "__setvecmeta");
+  lua_setglobal(G, "__setvecmeta");
+  return 1;
+}
+
+// Runs VoxMesa's own startup script (defines Vector3, Instance, game ...) before scripts are locked down.
+EMSCRIPTEN_KEEPALIVE const char* vox_prelude(const char* source) {
+  errBuf.clear();
+  size_t size = 0;
+  char* bytecode = luau_compile(source, strlen(source), nullptr, &size);
+  lua_State* T = lua_newthread(G);
+  int rc = luau_load(T, "prelude", bytecode, size, 0);
+  free(bytecode);
+  if (rc != 0 || lua_pcall(T, 0, 0, 0) != 0) {
+    const char* msg = lua_tostring(T, -1);
+    errBuf = msg ? msg : "prelude failed";
+  }
+  lua_pop(G, 1);
+  return errBuf.c_str();
+}
+
+// Locks the standard library so scripts cannot change it.
+EMSCRIPTEN_KEEPALIVE int vox_seal() {
   luaL_sandbox(G);
   return 1;
 }

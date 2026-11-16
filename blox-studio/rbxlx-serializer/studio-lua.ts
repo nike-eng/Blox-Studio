@@ -234,23 +234,8 @@ function enumObject(): HostObject {
   return { typeName: 'Enums', get: (k) => group(k), set: () => undefined, toString: () => 'Enum' };
 }
 
-export type RunResult = { ok: boolean; instances: PlaceInstance[]; changed: boolean };
-
-/**
- * Runs a Luau script against a copy of the place. The caller applies `instances` when `changed`.
- * @param source - script text
- * @param instances - the place
- * @param opts - output callback, chunk name, the script instance being run, and a hook to receive the interpreter (for Stop)
- */
-export async function runStudioScript(
-  source: string,
-  instances: PlaceInstance[],
-  opts: { chunk?: string; scriptId?: string; out: (kind: OutputKind, text: string) => void; onStart?: (it: Interpreter) => void },
-): Promise<RunResult> {
-  const it = new Interpreter(opts.out);
-  const ctx = new StudioContext(instances, it);
-  opts.onStart?.(it);
-  const ws = ctx.find('Workspace');
+/** The `game` object and `Instance.new`, shared by the beginner runner and real Luau. */
+function makeGlobals(ctx: StudioContext): { game: HostObject; instanceLib: LuaTable } {
   const game: HostObject = {
     typeName: 'DataModel',
     toString: () => 'Game',
@@ -271,9 +256,6 @@ export async function runStudioScript(
       throw new LuauError(`${k} is not a valid member of DataModel "Game"`);
     },
   };
-  it.setGlobal('game', game);
-  if (ws) it.setGlobal('workspace', ctx.ref(ws));
-  it.setGlobal('Enum', enumObject());
   const instanceLib = new LuaTable();
   instanceLib.set('new', (cls: unknown, parent?: unknown) => {
     const name = tostr(cls); const def = CREATABLE[name];
@@ -286,6 +268,30 @@ export async function runStudioScript(
     if (parent instanceof InstanceRef) r.set('Parent', parent);
     return r;
   });
+  return { game, instanceLib };
+}
+
+export type RunResult = { ok: boolean; instances: PlaceInstance[]; changed: boolean };
+
+/**
+ * Runs a Luau script against a copy of the place. The caller applies `instances` when `changed`.
+ * @param source - script text
+ * @param instances - the place
+ * @param opts - output callback, chunk name, the script instance being run, and a hook to receive the interpreter (for Stop)
+ */
+export async function runStudioScript(
+  source: string,
+  instances: PlaceInstance[],
+  opts: { chunk?: string; scriptId?: string; out: (kind: OutputKind, text: string) => void; onStart?: (it: Interpreter) => void },
+): Promise<RunResult> {
+  const it = new Interpreter(opts.out);
+  const ctx = new StudioContext(instances, it);
+  opts.onStart?.(it);
+  const { game, instanceLib } = makeGlobals(ctx);
+  const ws = ctx.find('Workspace');
+  it.setGlobal('game', game);
+  if (ws) it.setGlobal('workspace', ctx.ref(ws));
+  it.setGlobal('Enum', enumObject());
   it.setGlobal('Instance', instanceLib);
   if (opts.scriptId) { const s = ctx.find(opts.scriptId); if (s) it.setGlobal('script', ctx.ref(s)); }
   const res = await it.run(source, opts.chunk || 'Command');
@@ -293,3 +299,90 @@ export async function runStudioScript(
 }
 
 export { Multi };
+
+// ------------------------------------------------------------------ real Luau host
+
+type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
+const isHost = (v: unknown): v is HostObject => !!v && typeof v === 'object' && typeof (v as HostObject).get === 'function' && typeof (v as HostObject).set === 'function';
+let handleCounter = 10; // 1 = game, 2 = Enum; the counter keeps counting across runs so old handles never match new ones
+
+/**
+ * The editor side of real Luau (WebAssembly). A script's calls arrive as `host(op, jsonArgs)` and are answered with JSON:
+ * `{"r": value}` or `{"e": "message"}`. It reuses the same place copy and rules as the beginner runner, so a script
+ * changes the place in one undo step: read `result()` when it has finished.
+ */
+export function createRealHost(instances: PlaceInstance[], opts: { scriptId?: string; out: (kind: OutputKind, text: string) => void }) {
+  const it = new Interpreter(opts.out);
+  const ctx = new StudioContext(instances, it);
+  const { game, instanceLib } = makeGlobals(ctx);
+  const handles = new Map<number, HostObject>([[1, game], [2, enumObject()]]);
+  const handleOf = new Map<HostObject, number>([[game, 1]]);
+  const newInstance = instanceLib.get('new') as (cls: unknown, parent?: unknown) => InstanceRef;
+
+  const enc = (v: unknown): Json => {
+    if (v == null) return null;
+    if (typeof v === 'boolean' || typeof v === 'string') return v;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+    if (typeof v === 'function') return { $: 'm' };
+    if (v instanceof Multi) return enc(v.values[0]);
+    if (v instanceof InstanceRef) return { $: 'i', id: v.id };
+    if (v instanceof Vector3) return { $: 'v', v: [v.x, v.y, v.z] };
+    if (v instanceof Color3) return { $: 'c', v: [v.r, v.g, v.b] };
+    if (v instanceof LuaTable) return { $: 't', a: v.arr.map(enc) };
+    if (isHost(v)) {
+      let h = handleOf.get(v);
+      if (!h) { h = ++handleCounter; handleOf.set(v, h); handles.set(h, v); }
+      return { $: 'h', h };
+    }
+    return String(v);
+  };
+  const dec = (n: Json): unknown => {
+    if (n == null || typeof n !== 'object') return n ?? undefined;
+    if (Array.isArray(n)) return n.map(dec);
+    const o = n as { [k: string]: Json };
+    switch (o.$) {
+      case 'i': { const i = ctx.find(String(o.id)); if (!i) throw new LuauError('This instance has been destroyed'); return ctx.ref(i); }
+      case 'h': { const h = handles.get(Number(o.h)); if (!h) throw new LuauError('That object is no longer available'); return h; }
+      case 'v': { const a = o.v as number[]; return new Vector3(a[0], a[1], a[2]); }
+      case 'c': { const a = o.v as number[]; return new Color3(a[0], a[1], a[2]); }
+      case 't': { const t = new LuaTable(); (o.a as Json[]).forEach((x, k) => t.set(k + 1, dec(x))); return t; }
+      default: return undefined;
+    }
+  };
+  const target = (n: Json): HostObject => {
+    const t = dec(n);
+    if (!isHost(t)) throw new LuauError('Attempt to index something that is not an object');
+    return t;
+  };
+
+  const ops: Record<string, (a: Json[]) => unknown> = {
+    get: ([t, k]) => { const key = String(k); const o = target(t); if (o instanceof InstanceRef && EVENTS.has(key)) return { $e: key }; return o.get(key); },
+    set: ([t, k, v]) => { target(t).set(String(k), dec(v)); return undefined; },
+    call: ([t, k, args]) => {
+      const f = target(t).get(String(k));
+      if (typeof f !== 'function') throw new LuauError(`${String(k)} is not a function`);
+      return (f as (...a: unknown[]) => unknown)(target(t), ...(args as Json[]).map(dec));
+    },
+    new: ([cls, parent]) => newInstance(dec(cls), dec(parent)),
+    log: ([kind, text]) => { opts.out((kind as OutputKind) || 'print', String(text)); return undefined; },
+    warn: ([name]) => { const n = String(name); if (!ctx.warned.has(n)) { ctx.warned.add(n); opts.out('warn', `The ${n} event does not run in the editor yet, so Connect did nothing.`); } return undefined; },
+  };
+
+  return {
+    /** Answers one call from the script. */
+    host(op: string, argsJson: string): string {
+      try {
+        const fn = ops[op];
+        if (!fn) throw new LuauError(`Unknown editor call "${op}"`);
+        const r = fn(JSON.parse(argsJson || '[]') as Json[]);
+        if (r && typeof r === 'object' && '$e' in (r as object)) return JSON.stringify({ r: { $: 'e', n: (r as { $e: string }).$e } });
+        return JSON.stringify({ r: enc(r) });
+      } catch (e) {
+        return JSON.stringify({ e: e instanceof Error ? e.message : String(e) });
+      }
+    },
+    /** The id of the script being run, so it can be offered to the script as `script`. */
+    scriptId: opts.scriptId && ctx.find(opts.scriptId) ? opts.scriptId : undefined,
+    result(): { instances: PlaceInstance[]; changed: boolean } { return { instances: ctx.list, changed: ctx.dirty }; },
+  };
+}
