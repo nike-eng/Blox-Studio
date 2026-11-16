@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { REAL_LUAU_MARK, runRealLuau } from './luau-real.js';
-import { SCRIPT_CLASSES, runStudioScript, type Interpreter, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
+import { SCRIPT_CLASSES, runStudioScript, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { studioApi, ApiError, type Project } from './studio-api.js';
 import { usePlaceEditor } from './use-place-editor.js';
 import { Viewport } from './viewport.js';
