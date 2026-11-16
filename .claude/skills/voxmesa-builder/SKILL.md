@@ -84,6 +84,7 @@ description: Auto-synced architecture, rules, and live route map for VoxMesa. Al
 - ./blox-studio/blox-studio-app/properties-panel.tsx
 - ./blox-studio/blox-studio-app/property-fields.tsx
 - ./blox-studio/blox-studio-app/publish-dialog.tsx
+- ./blox-studio/blox-studio-app/real-luau-prelude.ts
 - ./blox-studio/blox-studio-app/ribbon.tsx
 - ./blox-studio/blox-studio-app/scene-environment.tsx
 - ./blox-studio/blox-studio-app/script-editor.tsx
