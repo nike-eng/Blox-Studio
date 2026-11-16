@@ -361,7 +361,8 @@ export function createRealHost(instances: PlaceInstance[], opts: { scriptId?: st
     call: ([t, k, args]) => {
       const f = target(t).get(String(k));
       if (typeof f !== 'function') throw new LuauError(`${String(k)} is not a function`);
-      return (f as (...a: unknown[]) => unknown)(target(t), ...(args as Json[]).map(dec));
+      const list = args && typeof args === 'object' && !Array.isArray(args) && Array.isArray((args as { a?: Json[] }).a) ? (args as { a: Json[] }).a : [];
+      return (f as (...a: unknown[]) => unknown)(target(t), ...list.map(dec));
     },
     new: ([cls, parent]) => newInstance(dec(cls), dec(parent)),
     log: ([kind, text]) => { opts.out((kind as OutputKind) || 'print', String(text)); return undefined; },

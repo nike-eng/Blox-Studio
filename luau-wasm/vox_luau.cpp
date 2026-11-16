@@ -54,6 +54,14 @@ static int l_host(lua_State* L) {
 }
 
 // Lets the prelude give vectors extra members (Magnitude, Unit, Dot ...): __setvecmeta(metatable).
+// Scripts may see an overridden `typeof` (so Vector3 reports "Vector3"), so the compiler must not treat it as built in.
+static const char* kMutableGlobals[] = {"typeof", nullptr};
+static char* compileScript(const char* source, size_t* size) {
+  lua_CompileOptions opts = {};
+  opts.mutableGlobals = kMutableGlobals;
+  return luau_compile(source, strlen(source), &opts, size);
+}
+
 static int l_setvecmeta(lua_State* L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   lua_pushvector(L, 0.f, 0.f, 0.f);
@@ -81,7 +89,7 @@ EMSCRIPTEN_KEEPALIVE int vox_init() {
 EMSCRIPTEN_KEEPALIVE const char* vox_prelude(const char* source) {
   errBuf.clear();
   size_t size = 0;
-  char* bytecode = luau_compile(source, strlen(source), nullptr, &size);
+  char* bytecode = compileScript(source, &size);
   lua_State* T = lua_newthread(G);
   int rc = luau_load(T, "prelude", bytecode, size, 0);
   free(bytecode);
@@ -104,7 +112,7 @@ EMSCRIPTEN_KEEPALIVE const char* vox_run(const char* source, const char* chunk) 
   errBuf.clear();
   if (!G) vox_init();
   size_t size = 0;
-  char* bytecode = luau_compile(source, strlen(source), nullptr, &size);
+  char* bytecode = compileScript(source, &size);
   lua_State* T = lua_newthread(G);
   luaL_sandboxthread(T);
   int rc = luau_load(T, chunk, bytecode, size, 0);
