@@ -222,6 +222,57 @@ typeof = function(v)
   return t
 end
 
+-- Scheduler: every script runs as a coroutine; task.wait() yields and the editor wakes it up later.
+local tasks = {}
+local clock = 0
+local firstErr = nil
+local function resume(co, ...)
+  local ok, a = coroutine.resume(co, ...)
+  if not ok then
+    if not firstErr then firstErr = tostring(a) end
+  elseif coroutine.status(co) == "suspended" then
+    tasks[#tasks + 1] = { co = co, at = clock + math.max(tonumber(a) or 0, 0.016) * 1000, since = clock }
+  end
+end
+local function asThread(f) if type(f) == "thread" then return f end return coroutine.create(f) end
+task = {
+  wait = function(n) return coroutine.yield(n or 0) end,
+  spawn = function(f, ...) local co = asThread(f) resume(co, ...) return co end,
+  defer = function(f, ...) local co = asThread(f) tasks[#tasks + 1] = { co = co, at = clock, since = clock, args = table.pack(...) } return co end,
+  delay = function(t, f, ...) local co = asThread(f) tasks[#tasks + 1] = { co = co, at = clock + (t or 0) * 1000, since = clock, args = table.pack(...) } return co end,
+  cancel = function(co)
+    for i = #tasks, 1, -1 do if tasks[i].co == co then table.remove(tasks, i) end end
+  end,
+}
+wait = task.wait
+spawn = task.spawn
+delay = task.delay
+function __runmain(fn, now)
+  clock = now
+  resume(coroutine.create(fn))
+  return firstErr
+end
+function __tick(now)
+  clock = now
+  while true do
+    local best, bi = nil, nil
+    for i, e in ipairs(tasks) do
+      if e.at <= now and (not best or e.at < best.at) then best, bi = e, i end
+    end
+    if not best then break end
+    table.remove(tasks, bi)
+    if best.args then resume(best.co, table.unpack(best.args, 1, best.args.n))
+    else resume(best.co, (now - best.since) / 1000) end
+  end
+  return firstErr
+end
+function __next()
+  local m = nil
+  for _, e in ipairs(tasks) do if not m or e.at < m then m = e.at end end
+  return m or -1
+end
+function __clear() tasks = {} firstErr = nil end
+
 local function say(kind, ...)
   local n = select("#", ...)
   local parts = {}

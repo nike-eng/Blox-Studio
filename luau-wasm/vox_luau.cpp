@@ -72,6 +72,9 @@ static int l_setvecmeta(lua_State* L) {
   return 0;
 }
 
+static void onInterrupt(lua_State* L, int);
+static void armDeadline();
+
 extern "C" {
 
 EMSCRIPTEN_KEEPALIVE int vox_init() {
@@ -84,12 +87,14 @@ EMSCRIPTEN_KEEPALIVE int vox_init() {
   lua_setglobal(G, "__host");
   lua_pushcfunction(G, l_setvecmeta, "__setvecmeta");
   lua_setglobal(G, "__setvecmeta");
+  lua_callbacks(G)->interrupt = onInterrupt;
   return 1;
 }
 
 // Runs VoxMesa's own startup script (defines Vector3, Instance, game ...) before scripts are locked down.
 EMSCRIPTEN_KEEPALIVE const char* vox_prelude(const char* source) {
   errBuf.clear();
+  armDeadline();
   size_t size = 0;
   char* bytecode = compileScript(source, &size);
   lua_State* T = lua_newthread(G);
@@ -109,10 +114,51 @@ EMSCRIPTEN_KEEPALIVE int vox_seal() {
   return 1;
 }
 
-// Runs a script. Returns "" when it finished, otherwise the error text.
-EMSCRIPTEN_KEEPALIVE const char* vox_run(const char* source, const char* chunk) {
+// Scripts that never wait would freeze the page, so they are stopped after a few seconds.
+static double deadline = 0;
+static unsigned intrCount = 0;
+static void armDeadline() { deadline = emscripten_get_now() + 5000; }
+static void onInterrupt(lua_State* L, int) {
+  if ((++intrCount & 1023) != 0) return;
+  double now = emscripten_get_now();
+  if (now > deadline) {
+    deadline = now + 1000;
+    luaL_error(L, "Script ran for too long without waiting. Add task.wait() inside long loops.");
+  }
+}
+
+static double nextWake = -1;
+
+// Calls the prelude's __next() to learn when the next task is due (milliseconds, or -1 for none).
+static void readNextWake() {
+  lua_State* T = lua_newthread(G);
+  lua_getglobal(T, "__next");
+  nextWake = (lua_pcall(T, 0, 1, 0) == 0 && lua_isnumber(T, -1)) ? lua_tonumber(T, -1) : -1;
+  lua_pop(G, 1);
+}
+
+// Moves an error (or nil) result at the top of T into errBuf.
+static void takeResult(lua_State* T, int rc) {
+  if (rc != 0) {
+    const char* msg = lua_tostring(T, -1);
+    errBuf = msg ? msg : "script error";
+  } else if (lua_isstring(T, -1)) {
+    errBuf = lua_tostring(T, -1);
+  }
+}
+
+// Starts a script. Returns "" when it is fine so far, otherwise the error text. Use vox_next / vox_tick for task.wait.
+EMSCRIPTEN_KEEPALIVE const char* vox_run(const char* source, const char* chunk, double now) {
   errBuf.clear();
+  nextWake = -1;
   if (!G) vox_init();
+  armDeadline();
+  {
+    lua_State* C = lua_newthread(G);
+    lua_getglobal(C, "__clear");
+    lua_pcall(C, 0, 0, 0);
+    lua_pop(G, 1);
+  }
   size_t size = 0;
   char* bytecode = compileScript(source, &size);
   lua_State* T = lua_newthread(G);
@@ -124,15 +170,39 @@ EMSCRIPTEN_KEEPALIVE const char* vox_run(const char* source, const char* chunk) 
     lua_pop(G, 1);
     return errBuf.c_str();
   }
-  int st = lua_resume(T, nullptr, 0);
-  if (st != LUA_OK && st != LUA_YIELD) {
-    const char* msg = lua_tostring(T, -1);
-    errBuf = msg ? msg : "script error";
-    const char* trace = lua_debugtrace(T);
-    if (trace) errBuf += std::string("\n") + trace;
-  }
+  lua_getglobal(T, "__runmain");
+  lua_insert(T, -2);
+  lua_pushnumber(T, now);
+  takeResult(T, lua_pcall(T, 2, 1, 0));
   lua_pop(G, 1);
+  if (errBuf.empty()) readNextWake();
   return errBuf.c_str();
+}
+
+// Runs every task that is due at `now` (milliseconds). Returns "" or the error text.
+EMSCRIPTEN_KEEPALIVE const char* vox_tick(double now) {
+  errBuf.clear();
+  armDeadline();
+  lua_State* T = lua_newthread(G);
+  lua_getglobal(T, "__tick");
+  lua_pushnumber(T, now);
+  takeResult(T, lua_pcall(T, 1, 1, 0));
+  lua_pop(G, 1);
+  if (errBuf.empty()) readNextWake(); else nextWake = -1;
+  return errBuf.c_str();
+}
+
+// When the next waiting task is due (milliseconds), or -1 when nothing is waiting.
+EMSCRIPTEN_KEEPALIVE double vox_next() { return nextWake; }
+
+// Drops every waiting task (used by Stop).
+EMSCRIPTEN_KEEPALIVE int vox_stop() {
+  lua_State* C = lua_newthread(G);
+  lua_getglobal(C, "__clear");
+  lua_pcall(C, 0, 0, 0);
+  lua_pop(G, 1);
+  nextWake = -1;
+  return 1;
 }
 
 // Everything the script printed since the last call.

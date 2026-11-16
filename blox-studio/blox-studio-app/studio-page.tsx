@@ -57,7 +57,7 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
   const [outputOpen, setOutputOpen] = useState(false);
   const [outputLines, setOutputLines] = useState<OutputLine[]>([]);
   const [running, setRunning] = useState(false);
-  const runner = useRef<Interpreter | null>(null);
+  const runner = useRef<{ abort: () => void } | null>(null);
   const lineId = useRef(0);
 
   const lastSeen = useRef(project.updatedAt);
@@ -152,9 +152,11 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     if (REAL_LUAU_MARK.test(source)) {
       // Beta: real Luau (WebAssembly). Changes it makes to the place land as ONE undo step, like the normal runner.
       const base = latest.current;
+      let stop = false;
+      runner.current = { abort: () => { stop = true; } };
       setRunning(true);
       try {
-        const r = await runRealLuau(source, chunk, base, log, scriptId);
+        const r = await runRealLuau(source, chunk, base, log, scriptId, () => stop);
         if (r.error) log('error', r.error.split('\n')[0]);
         else log('info', 'Ran with real Luau (beta).');
         if (r.changed) {
@@ -164,6 +166,7 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
       } catch {
         log('error', 'Real Luau could not load. Check your connection and try again.');
       } finally {
+        runner.current = null;
         setRunning(false);
       }
       return;

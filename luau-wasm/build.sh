@@ -15,7 +15,7 @@ emcc vox_luau.cpp build/libLuau.Compiler.a build/libLuau.VM.a build/libLuau.Ast.
   -I$S/VM/include -I$S/Compiler/include -I$S/Ast/include -I$S/Common/include \
   -O2 -fexceptions -std=c++17 \
   -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createLuau -sENVIRONMENT=web,worker \
-  -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS=_vox_init,_vox_prelude,_vox_seal,_vox_run,_vox_take_output,_malloc,_free \
+  -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS=_vox_init,_vox_prelude,_vox_seal,_vox_run,_vox_tick,_vox_next,_vox_stop,_vox_take_output,_malloc,_free \
   -sEXPORTED_RUNTIME_METHODS=cwrap,UTF8ToString,lengthBytesUTF8,stringToUTF8 \
   -o dist/vox_luau.js
 ls -la dist
