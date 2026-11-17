@@ -71,3 +71,12 @@ test('editor stays light with 1200 parts', async ({ page }) => {
   expect(picked).toBe(true);
   expect(errors).toEqual([]);
 });
+
+for (const [label, size] of [['phone-portrait', { width: 412, height: 780 }], ['phone-landscape', { width: 880, height: 380 }]] as const) {
+  test(`editor layout on ${label}`, async ({ page }) => {
+    await page.setViewportSize(size);
+    const errors = await openPlace(page, instances);
+    await printShot(page, label);
+    expect(errors).toEqual([]);
+  });
+}
