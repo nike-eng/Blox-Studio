@@ -195,8 +195,8 @@ export const studioApi = {
   deleteProjects: (ids: string[]) => request<{ deleted: number }>('/projects/delete-many', { method: 'POST', body: JSON.stringify({ ids }) }),
   deleteProject: (id: string) => request<{ ok: boolean }>(`/projects/${id}`, { method: 'DELETE' }),
   /** Publishes a project to Roblox. */
-  publish: (id: string, versionType: 'Saved' | 'Published') =>
-    request<PublishRecord>(`/projects/${id}/publish`, { method: 'POST', body: JSON.stringify({ versionType }) }),
+  publish: (id: string, versionType: 'Saved' | 'Published', apiKey?: string) =>
+    request<PublishRecord>(`/projects/${id}/publish`, { method: 'POST', body: JSON.stringify({ versionType, ...(apiKey ? { apiKey } : {}) }) }),
   /** Whether the Roblox API key is configured on the server. */
   robloxStatus: () => request<{ configured: boolean }>('/roblox/status'),
   /** Plain-language checklist of what is ready for publishing. */

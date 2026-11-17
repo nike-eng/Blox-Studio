@@ -288,7 +288,9 @@ export function run() {
   app.post('/projects/:id/publish', wrap(async (req, res) => {
     if (limited(`publish:${ownerOf(res)}`, 5)) { res.status(429).json({ message: 'You are publishing too fast. Wait a minute and try again.' }); return; }
     const versionType = req.body?.versionType === 'Saved' ? 'Saved' : 'Published';
-    res.json(await service.publish(String(req.params.id), versionType));
+    const rawKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
+    if (rawKey && (rawKey.length < 20 || rawKey.length > 4096 || /\s/.test(rawKey))) { res.status(400).json({ message: 'That does not look like a Roblox API key. Copy the whole key from create.roblox.com → Credentials.' }); return; }
+    res.json(await service.publish(String(req.params.id), versionType, rawKey || undefined));
   }));
 
   // ---- AI link (MCP): lets an AI assistant edit the owner's places through a private link.

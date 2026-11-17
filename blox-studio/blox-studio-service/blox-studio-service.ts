@@ -30,8 +30,9 @@ export class BloxStudioService {
    * Publishes a project to Roblox and records history.
    * @param id - project id
    * @param versionType - `Saved` or `Published`
+   * @param apiKey - the person's own Open Cloud key (optional; used once, never stored)
    */
-  async publish(id: string, versionType: 'Saved' | 'Published') {
+  async publish(id: string, versionType: 'Saved' | 'Published', apiKey?: string) {
     const project = await this.projects.get(id);
     if (!project) throw new Error('Project not found');
     if (!project.universeId || !project.placeId) {
@@ -41,6 +42,7 @@ export class BloxStudioService {
       universeId: project.universeId,
       placeId: project.placeId,
       versionType,
+      apiKey,
       rbxlx: this.exportPlace(project),
     });
     const record = { versionNumber: result.versionNumber, versionType, publishedAt: new Date().toISOString() };

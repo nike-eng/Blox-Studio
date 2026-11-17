@@ -20,6 +20,10 @@ export type PublishDialogProps = {
 /**
  * Dialog that links the project to a Roblox experience and publishes it via Open Cloud.
  */
+const KEY_STORE = 'voxmesa.robloxKey';
+function readKey(): string { try { return localStorage.getItem(KEY_STORE) || ''; } catch { return ''; } }
+function writeKey(v: string): void { try { if (v) localStorage.setItem(KEY_STORE, v); else localStorage.removeItem(KEY_STORE); } catch { /* private mode: the key just is not remembered */ } }
+
 export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose, settingsOnly }: PublishDialogProps) {
   const [universeId, setUniverseId] = useState(project.universeId || '');
   const [placeId, setPlaceId] = useState(project.placeId || '');
@@ -29,6 +33,9 @@ export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose,
   const [result, setResult] = useState<PublishRecord | null>(null);
   const [check, setCheck] = useState<{ ready: boolean; items: { ok: boolean; text: string }[] } | null>(null);
   const [sure, setSure] = useState(false);
+  const [apiKey, setApiKey] = useState(() => readKey());
+  const [remember, setRemember] = useState(() => !!readKey());
+  const [showKey, setShowKey] = useState(false);
 
   // Re-check what is ready whenever the IDs change (after saving them).
   useEffect(() => {
@@ -51,13 +58,16 @@ export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose,
   }, []);
 
   const idsValid = /^\d+$/.test(universeId) && /^\d+$/.test(placeId);
+  const keyOk = apiKey.length >= 20 && !/\s/.test(apiKey);
+  const canPublish = keyOk || configured === true;
 
   const run = async (versionType: 'Saved' | 'Published') => {
     setBusy(true); setError(''); setResult(null);
     try {
       await onSaveIds(universeId, placeId);
       await flush();
-      const record = await studioApi.publish(project.id, versionType);
+      writeKey(remember ? apiKey : '');
+      const record = await studioApi.publish(project.id, versionType, keyOk ? apiKey : undefined);
       setResult(record);
       onPublished(record);
     } catch (err) {
@@ -75,11 +85,32 @@ export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose,
           <button type="button" className={styles.scriptClose} onClick={onClose} aria-label="Close">✕</button>
         </header>
 
-        {configured === false && (
-          <div className={styles.notice}>
-            The server has no Roblox Open Cloud API key yet. Create one at{' '}
-            <a href="https://create.roblox.com/dashboard/credentials" target="_blank" rel="noreferrer">create.roblox.com → Credentials</a>{' '}
-            with the <b>universe-places:write</b> permission for your experience, then add it as <code>ROBLOX_API_KEY</code>.
+        {!settingsOnly && (
+          <div className={styles.field}>
+            <label htmlFor="rbx-key"><span>Roblox API key</span></label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                id="rbx-key"
+                className={styles.textInput}
+                style={{ flex: 1, minWidth: 0 }}
+                type={showKey ? 'text' : 'password'}
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value.trim())}
+                placeholder="Paste your key here"
+              />
+              <button type="button" className={styles.secondaryBtn} onClick={() => setShowKey((v) => !v)} aria-pressed={showKey}>{showKey ? 'Hide' : 'Show'}</button>
+            </div>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, fontSize: '0.85rem' }}>
+              <input type="checkbox" checked={remember} onChange={(e) => { setRemember(e.target.checked); if (!e.target.checked) writeKey(''); }} />
+              Remember it on this device
+            </label>
+            <p className={styles.hint}>
+              Make a key at <a href="https://create.roblox.com/dashboard/credentials" target="_blank" rel="noreferrer">create.roblox.com → Credentials</a>:
+              {' '}Create API Key → add <b>Place Publishing</b> (<code>universe-places:write</code>) for your experience → Save. It stays on this device and is only sent to Roblox when you publish. Never share it.
+            </p>
           </div>
         )}
 
@@ -97,7 +128,7 @@ export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose,
 
         {!settingsOnly && check && (
           <ul className={styles.checklist} aria-label="Ready to publish?">
-            {check.items.map((it) => (
+            {[{ ok: canPublish, text: canPublish ? 'A Roblox API key is ready.' : 'Paste your Roblox API key above.' }, ...check.items.slice(1)].map((it) => (
               <li key={it.text} data-ok={it.ok}><span className={styles.checkMark} aria-hidden="true">{it.ok ? '✅' : '⚠️'}</span><span>{it.text}</span></li>
             ))}
           </ul>
@@ -121,13 +152,13 @@ export function PublishDialog({ project, flush, onSaveIds, onPublished, onClose,
             </>
           ) : (
             <>
-              <button type="button" className={styles.secondaryBtn} disabled={busy || !idsValid || !configured} onClick={() => run('Saved')}>
+              <button type="button" className={styles.secondaryBtn} disabled={busy || !idsValid || !canPublish} onClick={() => run('Saved')}>
                 Save to Roblox
               </button>
               <button
                 type="button"
                 className={styles.publishBtn}
-                disabled={busy || !idsValid || !configured}
+                disabled={busy || !idsValid || !canPublish}
                 onClick={() => { if (!sure) { setSure(true); return; } setSure(false); void run('Published'); }}
                 title="Makes this version live for players"
               >

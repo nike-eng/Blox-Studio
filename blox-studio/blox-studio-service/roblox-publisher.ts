@@ -10,6 +10,8 @@ export type PublishOptions = {
   versionType: 'Saved' | 'Published';
   /** Serialized .rbxlx place file. */
   rbxlx: string;
+  /** The person's own Open Cloud key. Used for this one request only and never stored. */
+  apiKey?: string;
 };
 
 /**
@@ -24,7 +26,7 @@ export type PublishResult = { versionNumber: number };
 export function friendlyPublishError(status: number): string {
   switch (status) {
     case 400: return 'Roblox could not read this place file. Try Export and open it in Roblox Studio to see what is wrong.';
-    case 401: return 'The server\'s Roblox key is missing or wrong. The owner needs to create a new Open Cloud key and set it as ROBLOX_API_KEY.';
+    case 401: return 'Roblox did not accept the API key. Make a new key at create.roblox.com → Credentials, then paste it again.';
     case 403: return 'Roblox said no. The Open Cloud key needs the "universe-places:write" permission for this exact game, and its IP list must allow the server.';
     case 404: return 'Roblox could not find that game or place. Check the Universe ID and Place ID in Game settings.';
     case 409: return 'Roblox is busy with another change to this place. Wait a moment and try again.';
@@ -52,8 +54,8 @@ export class RobloxPublisher {
    * @returns the new version number
    */
   async publish(options: PublishOptions): Promise<PublishResult> {
-    const key = process.env.ROBLOX_API_KEY || this.apiKey;
-    if (!key) throw new Error('ROBLOX_API_KEY is not configured on the server.');
+    const key = options.apiKey || process.env.ROBLOX_API_KEY || this.apiKey;
+    if (!key) throw new Error('Paste your Roblox API key first (Publish → Roblox API key).');
     if (!/^\d+$/.test(options.universeId) || !/^\d+$/.test(options.placeId)) {
       throw new Error('Universe ID and Place ID must be numeric.');
     }
