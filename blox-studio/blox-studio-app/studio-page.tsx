@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { REAL_LUAU_MARK, runRealLuau } from './luau-real.js';
+import { LITE_MARK, preloadRealLuau, runRealLuau } from './luau-real.js';
 import { SCRIPT_CLASSES, runStudioScript, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { studioApi, ApiError, type Project } from './studio-api.js';
 import { usePlaceEditor } from './use-place-editor.js';
@@ -140,6 +140,8 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     return () => clearInterval(id);
   }, [project.id, editor.setAll]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => { void preloadRealLuau(); }, []);
+
   const log = useCallback((kind: OutputKind, text: string) => {
     setOutputLines((ls) => [...ls.slice(-499), { id: ++lineId.current, kind, text, time: Date.now() }]);
   }, []);
@@ -149,27 +151,31 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
     if (runner.current) return;
     setOutputOpen(true);
     if (echo) log('info', `> ${source.split('\n')[0]}${source.includes('\n') ? ' …' : ''}`);
-    if (REAL_LUAU_MARK.test(source)) {
-      // Beta: real Luau (WebAssembly). Changes it makes to the place land as ONE undo step, like the normal runner.
+    if (!LITE_MARK.test(source)) {
+      // Default: real Luau (WebAssembly). Changes it makes to the place land as ONE undo step, like the beginner runner.
       const base = latest.current;
       let stop = false;
       runner.current = { abort: () => { stop = true; } };
       setRunning(true);
+      let ready = false;
       try {
-        const r = await runRealLuau(source, chunk, base, log, scriptId, () => stop);
-        if (r.error) log('error', r.error.split('\n')[0]);
-        else log('info', 'Ran with real Luau (beta).');
-        if (r.changed) {
-          if (latest.current !== base) log('warn', 'You edited the place while the script was running, so its changes were not applied. Run it again.');
-          else editor.setAll(r.instances);
+        ready = await preloadRealLuau();
+        if (ready) {
+          const r = await runRealLuau(source, chunk, base, log, scriptId, () => stop);
+          if (r.error) log('error', r.error.split('\n')[0]);
+          if (r.changed) {
+            if (latest.current !== base) log('warn', 'You edited the place while the script was running, so its changes were not applied. Run it again.');
+            else editor.setAll(r.instances);
+          }
         }
-      } catch {
-        log('error', 'Real Luau could not load. Check your connection and try again.');
+      } catch (e) {
+        log('error', e instanceof Error ? e.message : 'The script could not run.');
       } finally {
         runner.current = null;
         setRunning(false);
       }
-      return;
+      if (ready) return;
+      log('warn', 'Real Luau could not load (check your connection), so the beginner runner is used for this run.');
     }
     const base = latest.current;
     setRunning(true);

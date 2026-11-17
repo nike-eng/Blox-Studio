@@ -54,8 +54,8 @@ static int l_host(lua_State* L) {
 }
 
 // Lets the prelude give vectors extra members (Magnitude, Unit, Dot ...): __setvecmeta(metatable).
-// Scripts may see an overridden `typeof` (so Vector3 reports "Vector3"), so the compiler must not treat it as built in.
-static const char* kMutableGlobals[] = {"typeof", nullptr};
+// Marks globals the compiler must not pre-resolve at load time (typeof is overridden; game/workspace/Enum are live objects, so `workspace.A.B` has to be read when the line runs).
+static const char* kMutableGlobals[] = {"typeof", "game", "workspace", "script", "Enum", "Instance", nullptr};
 static char* compileScript(const char* source, size_t* size) {
   lua_CompileOptions opts = {};
   opts.optimizationLevel = 1;

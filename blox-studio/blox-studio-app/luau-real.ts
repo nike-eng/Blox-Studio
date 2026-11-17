@@ -1,6 +1,6 @@
 /**
  * Real Luau: the official Luau engine (the language Roblox uses) running in the browser as WebAssembly.
- * Beta: scripts that start with the line `--!real` run here instead of the built-in beginner runner.
+ * This is the default script runner. A script whose first line is `--!lite` uses the built-in beginner runner instead.
  * The engine file lives in /luau/ and is built by the "Build real Luau" GitHub workflow.
  */
 import { createRealHost, type OutputKind, type PlaceInstance } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
@@ -27,7 +27,13 @@ function load(): Promise<LuauModule> {
   return loading;
 }
 
-export const REAL_LUAU_MARK = /^\s*--!real\b/;
+/** First line `--!lite` asks for the built-in beginner runner. */
+export const LITE_MARK = /^\s*--!lite\b/;
+
+/** Starts loading the engine in the background; resolves true when it is ready, false when it could not load. */
+export function preloadRealLuau(): Promise<boolean> {
+  return load().then(() => true, () => false);
+}
 
 export type RealRun = { error: string; instances: PlaceInstance[]; changed: boolean };
 
