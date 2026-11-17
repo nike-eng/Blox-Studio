@@ -306,6 +306,28 @@ type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
 const isHost = (v: unknown): v is HostObject => !!v && typeof v === 'object' && typeof (v as HostObject).get === 'function' && typeof (v as HostObject).set === 'function';
 let handleCounter = 10; // 1 = game, 2 = Enum; the counter keeps counting across runs so old handles never match new ones
 
+
+// CFrame <-> the place's position + Euler angles (degrees, XYZ order, the same convention the viewport uses).
+const RAD = Math.PI / 180;
+class CF { constructor(readonly v: number[]) {} }
+function cframeOf(p: Record<string, unknown>): CF {
+  const pos = (p.position as number[] | undefined) || [0, 0, 0];
+  const [rx, ry, rz] = ((p.rotation as number[] | undefined) || [0, 0, 0]).map((d) => d * RAD);
+  const a = Math.cos(rx), b = Math.sin(rx), c = Math.cos(ry), d = Math.sin(ry), e = Math.cos(rz), f = Math.sin(rz);
+  const ae = a * e, af = a * f, be = b * e, bf = b * f;
+  // rows of the rotation matrix
+  return new CF([pos[0], pos[1], pos[2], c * e, -c * f, d, af + be * d, ae - bf * d, -b * c, bf - ae * d, be + af * d, a * c]);
+}
+function applyCframe(p: Record<string, unknown>, v: number[]): void {
+  p.position = [v[0], v[1], v[2]];
+  const m13 = Math.max(-1, Math.min(1, v[5]));
+  const y = Math.asin(m13);
+  let x: number, z: number;
+  if (Math.abs(m13) < 0.9999999) { x = Math.atan2(-v[8], v[11]); z = Math.atan2(-v[4], v[3]); } else { x = Math.atan2(v[10], v[7]); z = 0; }
+  const r = (n: number) => Math.round((n / RAD) * 1000) / 1000;
+  p.rotation = [r(x), r(y), r(z)];
+}
+
 /**
  * The editor side of real Luau (WebAssembly). A script's calls arrive as `host(op, jsonArgs)` and are answered with JSON:
  * `{"r": value}` or `{"e": "message"}`. It reuses the same place copy and rules as the beginner runner, so a script
@@ -328,6 +350,7 @@ export function createRealHost(instances: PlaceInstance[], opts: { scriptId?: st
     if (v instanceof InstanceRef) return { $: 'i', id: v.id };
     if (v instanceof Vector3) return { $: 'v', v: [v.x, v.y, v.z] };
     if (v instanceof Color3) return { $: 'c', v: [v.r, v.g, v.b] };
+    if (v instanceof CF) return { $: 'cf', v: v.v };
     if (v instanceof LuaTable) return { $: 't', a: v.arr.map(enc) };
     if (isHost(v)) {
       let h = handleOf.get(v);
@@ -356,8 +379,19 @@ export function createRealHost(instances: PlaceInstance[], opts: { scriptId?: st
   };
 
   const ops: Record<string, (a: Json[]) => unknown> = {
-    get: ([t, k]) => { const key = String(k); const o = target(t); if (o instanceof InstanceRef && EVENTS.has(key)) return { $e: key }; return o.get(key); },
-    set: ([t, k, v]) => { target(t).set(String(k), dec(v)); return undefined; },
+    get: ([t, k]) => {
+      const key = String(k); const o = target(t);
+      if (key === 'CFrame' && o instanceof InstanceRef && PART_CLASSES.includes(o.inst.className)) return cframeOf(o.inst.props as Record<string, unknown>);
+      return ops.get2([t, k]);
+    },
+    get2: ([t, k]) => { const key = String(k); const o = target(t); if (o instanceof InstanceRef && EVENTS.has(key)) return { $e: key }; return o.get(key); },
+    set: ([t, k, v]) => {
+      const o = target(t);
+      if (String(k) === 'CFrame' && o instanceof InstanceRef && PART_CLASSES.includes(o.inst.className) && v && typeof v === 'object' && (v as { $?: string }).$ === 'cf') {
+        applyCframe(o.inst.props as Record<string, unknown>, (v as unknown as { v: number[] }).v); ctx.dirty = true; return undefined;
+      }
+      o.set(String(k), dec(v)); return undefined;
+    },
     call: ([t, k, args]) => {
       const f = target(t).get(String(k));
       if (typeof f !== 'function') throw new LuauError(`${String(k)} is not a function`);
