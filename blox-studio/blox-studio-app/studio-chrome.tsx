@@ -5,6 +5,7 @@ import type { PlaceEditor, Tool } from './use-place-editor.js';
 import { Icon, type IconName } from './icons.js';
 import s from './studio-chrome.module.css';
 import { BrandMark } from './brand-mark.js';
+import { KIT_LIST, type KitId } from './model-kit.js';
 
 /**
  * One thing the Add menu can put into the place.
@@ -17,6 +18,8 @@ export type InsertItem = {
   className: ClassName | 'Light';
   name?: string;
   props?: InstanceProps;
+  /** A ready-made model (many parts) instead of a single instance. */
+  kit?: KitId;
 };
 
 /** Basic shapes. */
@@ -50,6 +53,9 @@ export const MORE: InsertItem[] = [
   { id: 'folder', label: 'Folder', hint: 'Keeps things tidy', icon: 'folder', className: 'Folder' },
   { id: 'model', label: 'Model', hint: 'A group of parts', icon: 'model', className: 'Model' },
 ];
+
+/** Ready-made models, like Roblox's Toolbox. */
+export const MODELS: InsertItem[] = KIT_LIST.map((k) => ({ id: `kit-${k.id}`, label: k.label, hint: k.hint, icon: 'model' as IconName, className: 'Model' as const, kit: k.id }));
 
 const TOOLS: { id: Tool; label: string; key: string; icon: IconName; hint: string }[] = [
   { id: 'select', label: 'Select', key: '1', icon: 'select', hint: 'Tap things to pick them' },
@@ -241,6 +247,8 @@ export function AddMenu({ open, onToggle, onPick }: AddMenuProps) {
         <div className={s.sheet} ref={sheet} tabIndex={-1} role="dialog" aria-label="Add to your place">
           <h3 className={s.sheetTitle}>Shapes</h3>
           <div className={s.grid}>{SHAPES.map(tile)}</div>
+          <h3 className={s.sheetTitle}>Ready-made models</h3>
+          <div className={s.grid}>{MODELS.map(tile)}</div>
           <h3 className={s.sheetTitle}>Course pieces</h3>
           <div className={s.grid}>{OBBY.map(tile)}</div>
           <h3 className={s.sheetTitle}>Scripts &amp; more</h3>

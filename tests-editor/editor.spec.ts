@@ -80,3 +80,13 @@ for (const [label, size] of [['phone-portrait', { width: 412, height: 780 }], ['
     expect(errors).toEqual([]);
   });
 }
+
+test('Add menu drops a ready-made house into the place', async ({ page }) => {
+  const errors = await openPlace(page, instances);
+  await page.getByRole('button', { name: 'Add' }).click();
+  await page.getByRole('button', { name: /House/ }).click();
+  await expect(page.getByText('House').first()).toBeVisible();
+  await page.waitForTimeout(3000);
+  await printShot(page, 'house');
+  expect(errors).toEqual([]);
+});

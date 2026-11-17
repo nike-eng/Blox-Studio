@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { buildKit } from './model-kit.js';
 import { LITE_MARK, preloadRealLuau, runRealLuau } from './luau-real.js';
 import { SCRIPT_CLASSES, runStudioScript, type OutputKind, type OutputLine, type PlaceInstance, type Vec3 } from '@nikethbhat4thh/blox-studio.rbxlx-serializer';
 import { studioApi, ApiError, type Project } from './studio-api.js';
@@ -292,6 +293,13 @@ function Editor({ project, setProject }: { project: Project; setProject: (p: Pro
       const parent = item.className === 'Script' ? 'ServerScriptService' : item.className === 'ModuleScript' ? 'ReplicatedStorage' : 'StarterPlayerScripts';
       const created = editor.insert(item.className, parent);
       setOpenScriptId(created.id);
+      return;
+    }
+    if (item.kit) {
+      const spot = freeSpot([2, 1, 2]);
+      const made = buildKit(item.kit, spot[0], spot[1] - 0.5, spot[2]);
+      editor.setAll([...latest.current, ...made]);
+      editor.setSelectedId(made[0].id);
       return;
     }
     if (item.className === 'Folder' || item.className === 'Model') {
