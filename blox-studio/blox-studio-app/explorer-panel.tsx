@@ -7,6 +7,9 @@ import styles from './studio.module.css';
 
 const INSERTABLE: ClassName[] = ['Part', 'TrussPart', 'SpawnLocation', 'Model', 'Folder', 'Script', 'LocalScript', 'ModuleScript', 'PointLight'];
 
+/** True on phones and tablets (finger input): rows get taller, the buttons stay visible and nothing depends on hover, double-click or dragging. */
+const TOUCH = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+
 /**
  * Props for the Explorer panel.
  */
@@ -39,15 +42,30 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
     const open = !collapsed.has(inst.id);
     const isService = SERVICE_CLASSES.includes(inst.className);
     const matches = !filter || inst.name.toLowerCase().includes(filter.toLowerCase());
+    const isScript = SCRIPT_CLASSES.includes(inst.className);
+    const actions: [string, () => void][] = [
+      ...(isScript ? [['Edit script', () => { onOpenScript(inst.id); setActionsFor(null); }] as [string, () => void]] : []),
+      ['Rename', () => { const name = window.prompt('New name', inst.name); if (name && name.trim()) rename(inst.id, name.trim()); setActionsFor(null); }],
+      ['Duplicate', () => { duplicate(inst.id); setActionsFor(null); }],
+      ['Copy', () => { copy(inst.id); setActionsFor(null); }],
+      [canPaste ? 'Paste into' : 'Paste (copy first)', () => { if (canPaste) paste(inst.id); setActionsFor(null); }],
+      ['Group', () => { group(inst.id); setActionsFor(null); }],
+      ['Move into…', () => setMovingId(inst.id)],
+      ['Delete', () => { remove(inst.id); setActionsFor(null); }],
+    ];
     return (
       <div key={inst.id}>
         {matches && (
           <div
             className={`${styles.treeRow} ${selectedId === inst.id ? styles.treeRowSelected : ''}`}
-            style={{ paddingLeft: 6 + depth * 14 }}
-            onClick={() => setSelectedId(inst.id)}
-            onDoubleClick={() => SCRIPT_CLASSES.includes(inst.className) && onOpenScript(inst.id)}
-            draggable={!isService}
+            style={{ paddingLeft: 6 + depth * 14, ...(TOUCH ? { height: 40 } : {}) }}
+            onClick={() => {
+              // On touch there is no double-click: tapping a script that is already selected opens it.
+              if (TOUCH && isScript && selectedId === inst.id) onOpenScript(inst.id);
+              else setSelectedId(inst.id);
+            }}
+            onDoubleClick={() => isScript && onOpenScript(inst.id)}
+            draggable={!isService && !TOUCH}
             onDragStart={(e) => e.dataTransfer.setData('text/plain', inst.id)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
@@ -59,7 +77,7 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
             <button
               type="button"
               className={styles.treeToggle}
-              style={{ visibility: kids.length ? 'visible' : 'hidden' }}
+              style={{ visibility: kids.length ? 'visible' : 'hidden', ...(TOUCH ? { width: 30, height: 40, fontSize: '0.95rem', flexShrink: 0 } : {}) }}
               onClick={(e) => { e.stopPropagation(); toggle(inst.id); }}
               aria-label={open ? 'Collapse' : 'Expand'}
             >
@@ -71,7 +89,7 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
               <button
                 type="button"
                 className={styles.treeAdd}
-                style={{ width: 26, height: 22 }}
+                style={TOUCH ? { width: 36, height: 32, opacity: 1, flexShrink: 0 } : { width: 26, height: 22 }}
                 title="Actions: rename, copy, move into…"
                 onClick={(e) => { e.stopPropagation(); setActionsFor(actionsFor === inst.id ? null : inst.id); setMovingId(null); setMenuFor(null); }}
               >
@@ -81,6 +99,7 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
             <button
               type="button"
               className={styles.treeAdd}
+              style={TOUCH ? { width: 36, height: 32, opacity: 1, flexShrink: 0 } : undefined}
               title="Insert object"
               onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === inst.id ? null : inst.id); }}
             >
@@ -100,7 +119,7 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
                       type="button"
                       key={t.id}
                       className={styles.insertItem}
-                      style={{ minHeight: 32 }}
+                      style={{ minHeight: TOUCH ? 40 : 32 }}
                       onClick={() => { reparent(inst.id, t.id); setActionsFor(null); setMovingId(null); }}
                     >
                       <ClassIcon className={t.className} /> {t.name}
@@ -109,17 +128,9 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
               </>
             ) : (
               <>
-                {[
-                  ['Rename', () => { const name = window.prompt('New name', inst.name); if (name && name.trim()) rename(inst.id, name.trim()); setActionsFor(null); }],
-                  ['Duplicate', () => { duplicate(inst.id); setActionsFor(null); }],
-                  ['Copy', () => { copy(inst.id); setActionsFor(null); }],
-                  [canPaste ? 'Paste into' : 'Paste (copy first)', () => { if (canPaste) paste(inst.id); setActionsFor(null); }],
-                  ['Group', () => { group(inst.id); setActionsFor(null); }],
-                  ['Move into…', () => setMovingId(inst.id)],
-                  ['Delete', () => { remove(inst.id); setActionsFor(null); }],
-                ].map(([label, run]) => (
-                  <button type="button" key={label as string} className={styles.insertItem} style={{ minHeight: 32 }} onClick={run as () => void}>
-                    {label as string}
+                {actions.map(([label, run]) => (
+                  <button type="button" key={label} className={styles.insertItem} style={{ minHeight: TOUCH ? 40 : 32 }} onClick={run}>
+                    {label}
                   </button>
                 ))}
               </>
@@ -133,6 +144,7 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
                 type="button"
                 key={cls}
                 className={styles.insertItem}
+                style={TOUCH ? { minHeight: 40 } : undefined}
                 onClick={() => {
                   const created = insert(cls, inst.id, inst.props.position && cls === 'Part' ? { position: [inst.props.position[0], inst.props.position[1] + 3, inst.props.position[2]] } : undefined);
                   setMenuFor(null);
@@ -155,7 +167,7 @@ export function ExplorerPanel({ editor, onOpenScript }: ExplorerPanelProps) {
       <header className={styles.panelHeader}>Explorer</header>
       <input
         className={styles.filterInput}
-        placeholder="Filter workspace (Ctrl+Shift+X)"
+        placeholder={TOUCH ? 'Search objects' : 'Filter workspace (Ctrl+Shift+X)'}
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
       />
